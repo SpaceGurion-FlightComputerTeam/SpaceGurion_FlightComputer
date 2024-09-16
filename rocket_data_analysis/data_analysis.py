@@ -182,6 +182,8 @@ def clear_plot_directory(plt_dir):
 
 # Directory where plots are saved
 plot_dir = 'plots/'
+# Create the directory if it doesn't exist
+os.makedirs(plot_dir, exist_ok=True)
 clear_plot_directory(plot_dir)  # clears the directory from previous runs
 
 # Clear existing CSV file if it exists
