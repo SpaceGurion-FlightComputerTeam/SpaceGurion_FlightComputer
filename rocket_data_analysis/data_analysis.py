@@ -5,7 +5,8 @@ import time
 import numpy as np
 import matplotlib.pyplot as plt
 import os
-# change again 5
+import folium
+
 # Function to generate more realistic random data
 def generate_realistic_data(iteration):
     # Simulate realistic changes over time
