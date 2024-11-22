@@ -6,7 +6,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 
-
 # Function to generate more realistic random data
 def generate_realistic_data(iteration):
     # Simulate realistic changes over time
