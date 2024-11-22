@@ -1,5 +1,3 @@
-# token: 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
-
 from datetime import datetime
 import random
 import csv
