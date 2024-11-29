@@ -1,9 +1,9 @@
 import datetime
 import os
 import time
-import Barometer
+import Barometer.Barometer as Barometer
 import imuData
-import GPS
+import GPS.GPS as GPS
 # from imu import IMU
 # from gps import read_gps
 
