@@ -2,7 +2,7 @@ import datetime
 import os
 import time
 import Barometer.Barometer as Barometer
-import imuData
+import IMU.imuData as imuData
 import GPS.GPS as GPS
 # from imu import IMU
 # from gps import read_gps
