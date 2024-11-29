@@ -56,6 +56,7 @@ The **Main Application** implements the system logic, initializes components, an
 
 The folder structure reflects the layered architecture of the project:
 
+```plaintext
 /project_root
   ├── ESP32/
   │   ├── bsp/                      # Board Support Package
@@ -76,11 +77,11 @@ The folder structure reflects the layered architecture of the project:
   │   │   ├── serial_api.cpp
   │   │   ├── serial_api.h
   │   ├── main/                     # Main Application
-  │       ├── main.cpp
+  │   │   ├── main.cpp
   ├── include/                      # Shared headers (common typedefs, macros)
   │   ├── common.h
   ├── CMakeLists.txt                # Build system configuration
-
+```
 ---
 
 ## **Setup Instructions**
