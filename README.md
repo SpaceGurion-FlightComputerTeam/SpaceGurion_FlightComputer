@@ -33,4 +33,5 @@ git clone [[repository URL]](https://github.com/Flight-Computer-space-gurion/Sen
 2. Run the IMU sensor script:
   python imu_sensor.py
 
+![image](https://github.com/user-attachments/assets/646b7d1a-d403-4b7e-b372-297737af75a6)
 
