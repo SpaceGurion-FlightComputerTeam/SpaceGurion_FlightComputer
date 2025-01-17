@@ -1,5 +1,6 @@
-from ublox_gps import UbloxGps
-import serial
+from ublox_gps import UbloxGps #sudo pip install sparkfun-ublox-gps
+import serial # pip install pyserial
+
 
 def run():
     try:
