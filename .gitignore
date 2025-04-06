@@ -1,1 +1,53 @@
-.history/
+# ======================
+# Node.js / Web Server
+# ======================
+node_modules/
+dist/
+build/
+*.log
+*.env
+
+# ======================
+# Python
+# ======================
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.sqlite3
+.env
+.venv/
+env/
+venv/
+
+# ======================
+# VS Code
+# ======================
+.vscode/
+
+# ======================
+# PyCharm
+# ======================
+.idea/
+
+# ======================
+# OS & Editor Junk
+# ======================
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+
+# ======================
+# Project-specific
+# ======================
+rocket_data.csv
+*.bak
+*.tmp
+
+# ======================
+# Ignore compiled models or cache
+*.glb
+*.gltf
+*.bin

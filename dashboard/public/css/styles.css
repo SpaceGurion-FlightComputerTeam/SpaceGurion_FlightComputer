@@ -1,0 +1,91 @@
+body { 
+            margin: 0; 
+            overflow: hidden; 
+            background-color: #111; 
+            font-family: Arial, sans-serif;
+        }
+        #info {
+            position: absolute;
+            top: 10px;
+            width: 100%;
+            text-align: center;
+            color: white;
+            background-color: rgba(0,0,0,0.6);
+            padding: 8px;
+            font-size: 18px;
+            z-index: 100;
+        }
+        #controls {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background-color: rgba(0,0,0,0.6);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            z-index: 100;
+        }
+        #stats {
+            position: absolute;
+            top: 60px;
+            right: 10px;
+            color: white;
+            background-color: rgba(0,0,0,0.6);
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 14px;
+            z-index: 100;
+        }
+        button {
+            margin: 5px;
+            padding: 8px 16px;
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #0d8bf2;
+        }
+        button:disabled {
+            background-color: #7fb7e0;
+            cursor: default;
+        }
+        label {
+            margin-left: 10px;
+            cursor: pointer;
+        }
+        .switch {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+        }
+        .switch input {
+            margin-right: 8px;
+        }
+        #axisLegend {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background-color: rgba(0,0,0,0.6);
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            z-index: 100;
+        }
+        .axisColor {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            margin-right: 5px;
+            border-radius: 50%;
+        }
+        .red { background-color: red; }
+        .green { background-color: green; }
+        .blue { background-color: blue; }
+

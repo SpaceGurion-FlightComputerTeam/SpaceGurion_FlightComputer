@@ -1,37 +1,53 @@
-# Space Gurion - Flight Computer Sensors
+# Rocket IMU Data Visualization
 
-## Introduction
-Welcome to the Space Gurion's Flight Computer Sensors repository. This repository contains the code for the sensors used in our student-led rocketry program's flight computer. Our mission is to launch a rocket and gather crucial data during its flight.
+## Overview
+This project reads real-time data from the **ICM-20948 IMU sensor** using an Arduino microcontroller and displays it graphically in a web interface. The system runs on a **local Node.js server** and serves the visualization dashboard through a browser.
 
-## Hardware Requirements
-- GPS Module (e.g., Adafruit Ultimate GPS Module)
-- IMU Sensor (e.g., MPU-6050 or similar)
-- Raspberry Pi or any compatible microcontroller board
-- Serial-to-USB converter (for IMU sensor)
+## Installation & Setup
+### Prerequisites
+Before setting up, ensure you have the following installed:
+- **Node.js** (Download from [nodejs.org](https://nodejs.org/))
+- **Arduino IDE** (For uploading code to the microcontroller)
+- **Serial communication drivers** (if required for your Arduino board)
 
-## Software Requirements
-- Python 3.x
-- `adafruit_gps` library for GPS Module
-- `serial` library for UART communication
-- `numpy` for numerical operations
+### Setup Steps
+#### 1. Upload the Arduino Code
+1. Open **Arduino IDE**.
+2. Install required libraries (if any).
+3. Open the Arduino script from this repository.
+4. Select the correct board and port.
+5. Upload the code to your microcontroller.
 
-## Installation
-1. Clone the repository:
-git clone [[repository URL]](https://github.com/Flight-Computer-space-gurion/Sensors.git)
-2. Install required Python libraries:
-  pip install pyserial numpy
+#### 2. Install & Run the Web Server
+1. Open a terminal inside the `server` directory:
+   
+2. Install Node.js dependencies:
+   ```sh
+   npm install
+   ```
+3. Run the local server by double-click the `start.bat` file in the root directory
+   
+   - This will launch the server and open `http://127.0.0.1:8080/index.html` in your browser.
+   - If the batch file doesn’t work, manually start the server. enter the followind command in the terminal inside the `server` directory:
+     
+     ```sh
+     node server.js
+     ```
+     then copy `http://127.0.0.1:8080/index.html` to your browser
 
-## Usage
 
-### GPS Sensor
-1. Connect the GPS module to your Raspberry Pi or microcontroller.
-2. Run the GPS sensor script:
-  python gps_sensor.py
+## File Structure
+- **`arduino/`** → Contains the Arduino IMU sensor code.
+- **`server/`** → Contains the web interface and backend.
+  - **`server.js`** → Node.js server using Express.js.
+  - **`public/`** → HTML, CSS, and JavaScript files for visualization.
+  - **`package.json`** → Lists dependencies.
+  - **`start.bat`** → Starts the server and opens the web app.
 
-### IMU Sensor
-1. Connect the IMU sensor to your Raspberry Pi or microcontroller using the Serial-to-USB converter.
-2. Run the IMU sensor script:
-  python imu_sensor.py
 
-![image](https://github.com/user-attachments/assets/646b7d1a-d403-4b7e-b372-297737af75a6)
+## Troubleshooting
+- **Missing Packages?** Run `npm install` in the `server/` folder.
+- **Port Already in Use?** Change the port in `server.js` if 8080 is taken.
+- **Arduino Not Sending Data?** Check serial connections and baud rate.
+
 

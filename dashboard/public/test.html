@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<!-- ####################  TODO: ######################## 
+1. Add a 3D model of the rocket to the scene (three.js from the index.html) 
+   - Combine the two files into one and remove the old index.html
+   - Use the same model as in the index.html file
+2. Fix the charts to show the data correctly - CURRENTLY WORKING
+3. Add a button to start the simulation
+4. Add a button to control data trasfer
+5. Move css and js to relevent files
+6. Read data and update chrats and stats
+7. Add status to show if everything is ok
+-->
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rocket Control Panel</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background-color: #0b0f1a;
+      font-family: 'Segoe UI', sans-serif;
+      color: #e0e6f0;
+      display: flex;
+      height: 100vh;
+    }
+
+    #sidebar {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 20px;
+      padding: 20px;
+      background-color: #131722;
+      overflow-y: auto;
+    }
+
+    .module {
+      background-color: #1c1f2b;
+      border: 1px solid #2e3448;
+      border-radius: 12px;
+      padding: 15px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      transition: transform 0.2s ease;
+    }
+
+    .module:hover {
+      transform: scale(1.01);
+    }
+
+    .module.main {
+      position: relative;
+      height: 600px;
+      width: 500px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 10px;
+      grid-row: span 2;
+    }
+
+    .sceneBorder {
+      position: relative;
+      display: block;
+      border: 1px solid #3d8eff;
+      border-radius: 12px;
+      overflow: hidden;
+      width: 100%;
+      height: 100%;
+    }
+
+    canvas {
+      width: 100% !important;
+      height: 100% !important;
+      display: block;
+    }
+
+    h2 {
+      margin: 0 0 10px;
+      font-size: 14px;
+      color: #6ec1ff;
+      text-transform: uppercase;
+      border-bottom: 1px solid #2f3c5e;
+      padding-bottom: 6px;
+      letter-spacing: 0.5px;
+    }
+
+    .stat {
+      font-family: monospace;
+      font-size: 15px;
+      margin: 4px 0;
+    }
+
+    .label {
+      font-size: 13px;
+      margin-left: 8px;
+    }
+
+    .switch {
+      display: flex;
+      align-items: center;
+      margin: 8px 0;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 8px 16px;
+      margin: 4px 8px 4px 0;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+      background-color: #2f90ff;
+      color: white;
+      transition: background-color 0.2s ease;
+    }
+
+    .btn:hover {
+      background-color: #1f70d0;
+    }
+
+    .btn.secondary {
+      background-color: #ff4b5c;
+    }
+
+    .btn.secondary:hover {
+      background-color: #e13a4a;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px 16px;
+    }
+
+    .chart-container {
+      height: 200px;
+      width: 100%;
+    }
+
+    .chart-container canvas {
+      width: 100% !important;
+    }
+
+    #axisLegend {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background-color: rgba(0, 0, 0, 0.6);
+      color: white;
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      z-index: 100;
+    }
+
+    .axisColor {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      margin-right: 5px;
+      border-radius: 50%;
+    }
+
+    .red {
+      background-color: red;
+    }
+
+    .green {
+      background-color: green;
+    }
+
+    .blue {
+      background-color: blue;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="sidebar">
+
+    <div class="module">
+      <h2>Telemetry</h2>
+      <div class="grid">
+        <div class="stat">Roll: <span id="rollStat">0.0°</span></div>
+        <div class="stat">Vel Z: <span id="velZStat">0.0</span> m/s</div>
+        <div class="stat">Pitch: <span id="pitchStat">0.0°</span></div>
+        <div class="stat">Alt: <span id="altStat">0.0</span> m</div>
+        <div class="stat">Yaw: <span id="yawStat">0.0°</span></div>
+        <div class="stat">Status: <span id="status">Idle</span></div>
+      </div>
+
+      <div style="margin-top: 50px; margin-bottom: 50px;" id="controls">
+        <h2>Controls</h2>
+        <div class="switch">
+          <input type="checkbox" id="modelCheckbox" checked>
+          <label for="modelCheckbox">Load Model</label>
+        </div>
+        <div class="switch">
+          <input type="checkbox" id="gridCheckbox" checked>
+          <label for="gridCheckbox">Show grid</label>
+        </div>
+        <div class="switch">
+          <input type="checkbox" id="smoothingCheckbox" checked>
+          <label for="smoothingCheckbox">Enable smoothing</label>
+        </div>
+      </div>
+
+      <h2>Data</h2>
+      <div class="grid">
+        <div class="stat">Roll: <span id="rollStat2">0.0°</span></div>
+        <div class="stat">Vel Z: <span id="velZStat2">0.0</span> m/s</div>
+        <div class="stat">Pitch: <span id="pitchStat2">0.0°</span></div>
+        <div class="stat">Alt: <span id="altStat2">0.0</span> m</div>
+        <div class="stat">Yaw: <span id="yawStat2">0.0°</span></div>
+        <div class="stat">Status: <span id="status2">Idle</span></div>
+      </div>
+
+    </div>
+
+    <div class="module main">
+      <div class="sceneBorder" id="sceneContainer">
+        <!-- 3D scene will be rendered here -->
+      </div>
+      <div id="axisLegend">
+        <div><span class="axisColor red"></span>X-axis (Roll)</div>
+        <div><span class="axisColor green"></span>Y-axis (Pitch)</div>
+        <div><span class="axisColor blue"></span>Z-axis (Yaw)</div>
+      </div>
+    </div>
+
+    <div class="module">
+      <h2>Altitude & Velocity</h2>
+      <div class="chart-container">
+        <canvas id="altitudeChart"></canvas>
+      </div>
+      <div class="chart-container">
+        <canvas id="velocityChart"></canvas>
+      </div>
+    </div>
+
+    <div class="module">
+      <h2>Data Controls</h2>
+      <button class="btn" id="connectBtn">Connect</button>
+      <button class="btn" id="calibrateBtn">Quick Calibrate</button>
+      <button class="btn secondary" id="abortBtn">Abort</button>
+    </div>
+
+    <div class="module">
+      <h2>Charts Controls</h2>
+      <button class="btn" id="startBtn">Start Plotting</button>
+      <button class="btn" id="stopBtn">Stop Plotting</button>
+      <button class="btn secondary" id="clearBtn">Clear Charts</button>
+    </div>
+
+    <script>
+      // Create charts for Altitude and Velocity
+      // Using Chart.js for rendering the charts
+
+      const maxDataPoints = 30; // Reduced from 500 to improve performance
+
+      const altCtx = document.getElementById('altitudeChart').getContext('2d');
+      const velCtx = document.getElementById('velocityChart').getContext('2d');
+
+      // Configure common chart options for better performance
+      const commonOptions = {
+        maintainAspectRatio: false,
+        responsive: true,
+        animation: {
+          duration: 0 // short animations for better performance
+        },
+        scales: {
+          x: {
+            ticks: {
+              maxRotation: 0,
+              autoSkip: true,
+              color: '#aaa'
+            },
+            grid: {
+              color: 'rgba(70, 70, 70, 0.2)' // Subtle grid lines
+            }
+          },
+          y: {
+            ticks: {
+              color: '#aaa'
+            },
+            grid: {
+              color: 'rgba(70, 70, 70, 0.2)' // Subtle grid lines
+            },
+            // This prevents the Y axis from auto-scaling too aggressively
+            grace: '10%' // Add 10% padding to min/max values
+          }
+        },
+        elements: {
+          line: {
+            tension: 0.3 // Slight smoothing
+          },
+          point: {
+            radius: 0 // Hide points for better performance
+          }
+        },
+        plugins: {
+          legend: {
+            labels: { color: '#aaa' }
+          }
+        }
+      };
+
+      const altitudeChart = new Chart(altCtx, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [{
+            label: 'Altitude (m)',
+            data: [],
+            borderColor: '#00ffcc',
+            backgroundColor: 'rgba(0, 255, 204, 0.1)',
+            fill: true
+          }]
+        },
+        options: {
+          ...commonOptions,
+          scales: {
+            ...commonOptions.scales,
+            y: {
+              ...commonOptions.scales.y,
+              // Set fixed min and max for altitude (0 to 2100 meters)
+              min: 0,
+              max: 2500,
+              ticks: {
+                color: '#aaa',
+                stepSize: 200 // Fixed step size for ticks
+              }
+            }
+          }
+        }
+      });
+
+      const velocityChart = new Chart(velCtx, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [{
+            label: 'Velocity Z (m/s)',
+            data: [],
+            borderColor: '#ff8c00',
+            backgroundColor: 'rgba(255, 140, 0, 0.1)',
+            fill: true
+          }]
+        },
+        options: {
+          ...commonOptions,
+          scales: {
+            ...commonOptions.scales,
+            y: {
+              ...commonOptions.scales.y,
+              // Set fixed min and max for velocity (-150 to 300 m/s)
+              min: -150,
+              max: 300,
+              ticks: {
+                color: '#aaa',
+                stepSize: 50 // Fixed step size for ticks
+              }
+            }
+          }
+        }
+      });
+
+      // Store previous altitude for velocity calculation
+      let previousAltitude = null;
+      let previousTimestamp = null;
+
+      const socket = new WebSocket('ws://localhost:8765');
+
+      socket.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        console.log("[Data]", data); // Check if data is still coming in
+
+        // Format timestamp for display (can be adjusted as needed)
+        const timestamp = data.Timestamp || new Date().toISOString();
+        const altitude = parseFloat(data["Altitude"]);
+
+        // Calculate velocity more accurately with actual time difference
+        let velocityZ = 0;
+        if (previousAltitude !== null && previousTimestamp !== null) {
+          velocityZ = (altitude - previousAltitude) / 0.1; // Assuming 0.1s interval for simplicity
+        }
+
+        // Store current values for next calculation
+        previousAltitude = altitude;
+        previousTimestamp = timestamp;
+
+        // Use requestAnimationFrame to optimize chart updates
+        requestAnimationFrame(() => {
+          updateChart(altitudeChart, timestamp, altitude);
+          updateChart(velocityChart, timestamp, velocityZ);
+
+          // Update stats display
+          document.getElementById("altStat").textContent = altitude.toFixed(1);
+          document.getElementById("velZStat").textContent = velocityZ.toFixed(1);
+        });
+      };
+
+      socket.onopen = () => console.log("WebSocket connected");
+      socket.onerror = (err) => console.error("WebSocket error:", err);
+
+      function updateChart(chart, label, value) {
+        // Add new data point
+        chart.data.labels.push(label);
+        chart.data.datasets[0].data.push(value);
+
+        // Keep only the last N points
+        if (chart.data.labels.length > maxDataPoints) {
+          chart.data.labels.shift();
+          chart.data.datasets[0].data.shift();
+        }
+
+        // Update the chart with optimized rendering
+        chart.update('none'); // 'none' mode skips animations for better performance
+      }
+
+
+      clearBtn.addEventListener('click', () => {
+        resetCharts();
+      });
+
+      // Add a function to clear charts if needed
+      function resetCharts() {
+        previousAltitude = null;
+        previousTimestamp = null;
+
+        altitudeChart.data.labels = [];
+        altitudeChart.data.datasets[0].data = [];
+        altitudeChart.update();
+
+        velocityChart.data.labels = [];
+        velocityChart.data.datasets[0].data = [];
+        velocityChart.update();
+      }
+    </script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
+    <script src="js/model.js"></script>
+
+</body>
+
+</html>
