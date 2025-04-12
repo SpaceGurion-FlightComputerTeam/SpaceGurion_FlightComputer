@@ -17,7 +17,7 @@ import websockets
 def start_http_server():
     dashboard_dir = os.path.abspath("dashboard/public")
     subprocess.Popen(["python", "-m", "http.server", "8080"], cwd=dashboard_dir)
-    webbrowser.open("http://localhost:8080/test.html")
+    webbrowser.open("http://localhost:8080/dashboard.html")
 
 # WebSocket handler
 async def main():
