@@ -69,11 +69,6 @@ scene.add(backLight);
 
 // Add a grid for reference
 const gridHelper = new THREE.GridHelper(30, 30, 0x555555, 0x333333);
-// Flip the Y-axis (rotate 180 degrees)
-//gridHelper.rotation.y = Math.PI;  // Flip around Y-axis
-
-// Flip the Z-axis (rotate 180 degrees)
-//gridHelper.rotation.z = Math.PI;  // Flip around Z-axis
 
 // Rotate to position on the X-Y plane
 gridHelper.rotation.x = Math.PI / 2;  // Rotate 90 degrees around X-axis to make it lie on the X-Y plane
@@ -188,7 +183,6 @@ function loadModel(parentGroup) {
     parentGroup.add(yArrow);
 
 
-    /*
     // Z-axis (blue) - Yaw
     const zArrow = new THREE.ArrowHelper(
         new THREE.Vector3(0, 0, 1),
@@ -198,9 +192,9 @@ function loadModel(parentGroup) {
         headLength,
         headWidth
     );
-    //parentGroup.add(zArrow);
-    */
-
+    parentGroup.add(zArrow);
+   
+/*
     // Z-axis "flame" — looks like a rocket exhaust
     const flameLength = arrowLength;
     const flameRadius = 0.1;
@@ -219,8 +213,8 @@ function loadModel(parentGroup) {
     const flame = new THREE.Mesh(flameGeometry, flameMaterial);
     flame.rotation.x = Math.PI / 2;
     flame.position.set(0, 0, flameLength / 2 + 0.7);  // Position so base is at origin
-
     parentGroup.add(flame);
+    */
 
 
 }
@@ -228,7 +222,7 @@ function loadModel(parentGroup) {
 
 // Fallback to the original box if loading fails
 function createCube(parentGroup) {
-    const geometry = new THREE.BoxGeometry(2, 0.5, 2);
+    const geometry = new THREE.BoxGeometry(0.3, 4, 0.3);
     const material = new THREE.MeshPhongMaterial({
         color: 0x00a2ff,
         specular: 0x444444,
@@ -242,7 +236,7 @@ function createCube(parentGroup) {
     const edges = new THREE.LineSegments(edgesGeometry, edgesMaterial);
     box.add(edges);
     box.rotation.set(Math.PI / 2, 0, 0); // Example rotation if needed
-
+    box.position.set(0, 0, -1.2);
     parentGroup.add(box);
     console.warn('Falling back to cube due to model loading error');
 }
