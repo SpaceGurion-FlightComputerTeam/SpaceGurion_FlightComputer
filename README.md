@@ -34,7 +34,7 @@ SPACEGURION_FLIGHTCOMPUTER/
 │   ├── IMU_Data/
 │   │   └── IMU_Data.ino  ** to be removed
 │   └── libraries/
-│       * spedified below *
+│       * specified below *
 │
 ├── backend/
 │   └── rocket_data_analysis/
@@ -54,6 +54,10 @@ SPACEGURION_FLIGHTCOMPUTER/
 │       │   └── model.js
 │       └── dashboard.html
 │
+├── schematics/
+│   ├── hardware_diagram.png
+│   └── ground_control.png
+|
 ├── start.bat
 └── README.md
 ```
