@@ -1,7 +1,7 @@
 // Create charts for Altitude and Velocity
 // Using Chart.js for rendering the charts
 window.addEventListener('DOMContentLoaded', () => {
-    const maxDataPoints = 30;
+    const maxDataPoints = 50;
 
     const altCtx = document.getElementById('altitudeChart').getContext('2d');
     const velCtx = document.getElementById('velocityChart').getContext('2d');
@@ -74,8 +74,8 @@ window.addEventListener('DOMContentLoaded', () => {
                 ...commonOptions.scales,
                 y: {
                     ...commonOptions.scales.y,
-                    min: -150,
-                    max: 300,
+                    //min: -150,
+                    //max: 500,
                     ticks: { color: '#aaa', stepSize: 50 }
                 }
             }
@@ -131,12 +131,35 @@ window.addEventListener('DOMContentLoaded', () => {
 
 
     // Event listeners for buttons
+    document.getElementById('startBtn').addEventListener('click', () => {
+        startData();
+    });
+    document.getElementById('stopBtn').addEventListener('click', () => {
+        stopData();
+    });
     document.getElementById('clearBtn').addEventListener('click', () => {
         resetCharts();
     });
 
-    // functions to handle button clicks
+    // functions to handle buttons clicks
+    function startData() {
+        socket.send(JSON.stringify({ command: "start" }));
+        document.getElementById("status").textContent = "Streaming...";
+        document.getElementById("startBtn").disabled = true;
+        document.getElementById("stopBtn").disabled = false;
+    }
+
+    function stopData() {
+        socket.send(JSON.stringify({ command: "stop" }));
+        document.getElementById("status").textContent = "Stopped";
+        document.getElementById("startBtn").disabled = false;
+        document.getElementById("stopBtn").disabled = true;
+    }
+
     function resetCharts() {
+        socket.send(JSON.stringify({ command: "reset" }));
+        document.getElementById("status").textContent = "Resetting...";
+
         previousAltitude = null;
         previousTimestamp = null;
 
@@ -149,5 +172,4 @@ window.addEventListener('DOMContentLoaded', () => {
         velocityChart.update();
     }
 
-    // TODO: Add event listener for data streaming start/stop buttons
 });

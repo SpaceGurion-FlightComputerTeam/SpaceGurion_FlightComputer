@@ -108,6 +108,11 @@
   .btn.secondary {
     background-color: #ff4b5c;
   }
+  
+  .btn:disabled {
+    background-color: #7fb7e0;
+    cursor: default;
+ }
 
   .btn.secondary:hover {
     background-color: #e13a4a;

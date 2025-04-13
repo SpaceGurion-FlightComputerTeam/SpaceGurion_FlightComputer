@@ -6,7 +6,7 @@ const ADAPTIVE_RENDERING = true;        // Reduce render quality when moving fas
 // ***************************   Connect UI elements ************************************
 const connectBtn = document.getElementById('connectBtn');
 const calibrateBtn = document.getElementById('calibrateBtn');
-const smoothingCheckbox = document.getElementById('smoothingCheckbox');
+const axisCheckbox = document.getElementById('axisCheckbox');
 const gridCheckbox = document.getElementById('gridCheckbox');
 const modelCheckbox = document.getElementById('modelCheckbox');
 const rollStat = document.getElementById('rollStat');
@@ -106,6 +106,8 @@ function createIMUObject() {
     return group;
 }
 
+let xArrow, yArrow, zArrow;     // Global variables for axis arrows
+
 function loadModel(parentGroup) {
     // Clear any existing model
     while (parentGroup.children.length > 0) {
@@ -161,7 +163,7 @@ function loadModel(parentGroup) {
     const headWidth = 0.15;
 
     // X-axis (red) - Roll
-    const xArrow = new THREE.ArrowHelper(
+    xArrow = new THREE.ArrowHelper(
         new THREE.Vector3(1, 0, 0),
         new THREE.Vector3(0, 0, 0),
         arrowLength,
@@ -172,7 +174,7 @@ function loadModel(parentGroup) {
     parentGroup.add(xArrow);
 
     // Y-axis (green) - Pitch
-    const yArrow = new THREE.ArrowHelper(
+    yArrow = new THREE.ArrowHelper(
         new THREE.Vector3(0, 1, 0),
         new THREE.Vector3(0, 0, 0),
         arrowLength,
@@ -184,7 +186,7 @@ function loadModel(parentGroup) {
 
 
     // Z-axis (blue) - Yaw
-    const zArrow = new THREE.ArrowHelper(
+    zArrow = new THREE.ArrowHelper(
         new THREE.Vector3(0, 0, 1),
         new THREE.Vector3(0, 0, 0),
         arrowLength,
@@ -194,7 +196,7 @@ function loadModel(parentGroup) {
     );
     parentGroup.add(zArrow);
    
-/*
+
     // Z-axis "flame" — looks like a rocket exhaust
     const flameLength = arrowLength;
     const flameRadius = 0.1;
@@ -214,7 +216,7 @@ function loadModel(parentGroup) {
     flame.rotation.x = Math.PI / 2;
     flame.position.set(0, 0, flameLength / 2 + 0.7);  // Position so base is at origin
     parentGroup.add(flame);
-    */
+    
 
 
 }
@@ -266,6 +268,12 @@ function animate(time) {
 
     // Toggle grid visibility
     gridHelper.visible = gridCheckbox.checked;
+    
+    // Toggle axis visibility
+    const showAxes = axisCheckbox.checked;
+    xArrow.visible = showAxes;
+    yArrow.visible = showAxes;
+    zArrow.visible = showAxes;
 
 }
 
@@ -424,17 +432,12 @@ function updateOrientation() {
     const movementMagnitude = calculateMovementMagnitude(targetRoll, targetPitch, targetYaw);
     updateAdaptiveSmoothing(movementMagnitude);
 
-    if (smoothingCheckbox.checked) {
-        // Apply adaptive smoothing only if needed
-        currentRoll += adaptiveSmoothingFactor * (targetRoll - currentRoll);
-        currentPitch += adaptiveSmoothingFactor * (targetPitch - currentPitch);
-        currentYaw += adaptiveSmoothingFactor * (targetYaw - currentYaw);
-    } else {
-        // Direct update without smoothing
-        currentRoll = targetRoll;
-        currentPitch = targetPitch;
-        currentYaw = targetYaw;
-    }
+
+    // Apply adaptive smoothing only if needed
+    currentRoll += adaptiveSmoothingFactor * (targetRoll - currentRoll);
+    currentPitch += adaptiveSmoothingFactor * (targetPitch - currentPitch);
+    currentYaw += adaptiveSmoothingFactor * (targetYaw - currentYaw);
+ 
 
     // Apply yaw offset BEFORE converting to radians
     const adjustedYaw = currentYaw - yawOffset;
