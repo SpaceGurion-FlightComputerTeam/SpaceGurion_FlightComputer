@@ -27,6 +27,7 @@ async def main():
 
     print("[System] WebSocket server started")  # log message
     # run the funntion while the server is running
+    
     await asyncio.gather(
         read_and_write_data(),
         server.wait_closed()
