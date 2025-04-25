@@ -10,7 +10,7 @@ import websockets
 
 CLIENTS = set() # Set to keep track of connected WebSocket clients
 is_reading = False # Flag to indicate if data is being read and written
-
+is_connected = False # Flag to indicate if the sensor is connected
 
 # This function simulates realistic data generation for temperature, pressure, altitude, gyro, and accelerometer values.
 # TODO: Replace with actual sensor data acquisition function
@@ -94,6 +94,7 @@ def generate_realistic_data(iteration, dt=0.1):
     
     return temperature, pressure, altitude, gyro_x, gyro_y, gyro_z, accel_x, accel_y, accel_z
 
+
 # Broadcast JSON data to all connected clients
 # This function sends the data to GUI visualization in real-time.
 async def broadcast(data_dict):
@@ -104,14 +105,22 @@ async def broadcast(data_dict):
 # WebSocket handler: Handles incoming WebSocket connections
 # This function is called when a new client connects to the WebSocket server.
 async def websocket_handler(websocket):
-    global is_reading
+    global is_reading, is_connected
     CLIENTS.add(websocket)  # Add the new client to the set of connected clients
     
     async for message in websocket:
         data = json.loads(message)
         cmd = data.get("command")
-
-        if cmd == "start":
+        if cmd == "connect":
+            # Attempt to connect to sensor here
+            success = try_connect_to_sensors()  # Simulate a successful connection (replace with actual connection logic)
+            if success:
+                is_connected = True
+                await websocket.send(json.dumps({"status": "connected"}))
+                print("[Backend] Sensor connected successfully.")
+            else:
+                await websocket.send(json.dumps({"status": "connection_failed"}))
+        elif cmd == "start":
             is_reading = True
             print("Data generation started.")
         elif cmd == "stop":
@@ -122,6 +131,18 @@ async def websocket_handler(websocket):
     finally:
         CLIENTS.remove(websocket)       # Remove the client from the set of connected clients
 
+async def try_connect_to_sensors():
+    try:
+        # Replace with actual hardware init logic (e.g., open serial port)
+        # Example:
+        # serial_port = serial.Serial('COM3', 115200, timeout=1)
+        # time.sleep(2)  # wait for connection
+        print("[Backend] Simulating connection to sensors...")
+        await asyncio.sleep(1)  # simulate delay
+        return True  # return False if connection fails
+    except Exception as e:
+        print(f"[Backend] Sensor connection failed: {e}")
+        return False
 
 # Async function to read, write and stream data
 async def read_and_write_data():
@@ -138,6 +159,7 @@ async def read_and_write_data():
                         'Gyro X', 'Gyro Y', 'Gyro Z', 'Accel X', 'Accel Y', 'Accel Z'])
         file.flush()    # Ensure the header is written immediately
 
+   
     iteration = 0   # Initialize iteration counter for data generation. delete this line if not needed
     start_time = time.time()
     

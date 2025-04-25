@@ -86,22 +86,40 @@ window.addEventListener('DOMContentLoaded', () => {
     let previousAltitude = null;
     let previousTimestamp = null;
 
-    const socket = new WebSocket('ws://localhost:8765');
+    
+    document.getElementById("connectBtn").disabled = true;
+    document.getElementById("startBtn").disabled = true;
+    document.getElementById("stopBtn").disabled = true;
+        
 
+    const socket = new WebSocket('ws://localhost:8765');
     socket.onmessage = (event) => {
         const data = JSON.parse(event.data);
         console.log("[Data]", data); // Check if data is still coming in
-        
+
+        // If it's a status message
+        if (data.status) {
+            if (data.status === "connected") {
+                document.getElementById("connectionStatus").textContent = "✅ Connected";
+                document.getElementById("startBtn").disabled = false;
+                document.getElementById("connectBtn").textContent = "Connected";
+                document.getElementById("connectBtn").disabled = true;
+            } else if (data.status === "connection_failed") {
+                document.getElementById("connectionStatus").textContent = "❌ Connection failed";
+            }
+            return;
+        }
+
         // Format timestamp for display (can be adjusted as needed)
         const timestamp = data.Timestamp || new Date().toISOString();
         const altitude = parseFloat(data["Altitude"]);
 
-// Calculate velocity more accurately with actual time difference
+        // Calculate velocity more accurately with actual time difference
         let velocityZ = 0;
         if (previousAltitude !== null && previousTimestamp !== null) {
             velocityZ = (altitude - previousAltitude) / 0.1;
         }
-// Store current values for next calculation
+        // Store current values for next calculation
         previousAltitude = altitude;
         previousTimestamp = timestamp;
 
@@ -114,14 +132,18 @@ window.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    socket.onopen = () => console.log("WebSocket connected");
+    
+    socket.onopen = () => {
+        console.log("WebSocket connected !!!"); 
+        document.getElementById("connectBtn").disabled = false;
+    }
     socket.onerror = (err) => console.error("WebSocket error:", err);
-
+ 
     function updateChart(chart, label, value) {
         chart.data.labels.push(label);
         chart.data.datasets[0].data.push(value);
 
-         // Keep only the last N points
+        // Keep only the last N points
         if (chart.data.labels.length > maxDataPoints) {
             chart.data.labels.shift();
             chart.data.datasets[0].data.shift();
@@ -131,6 +153,9 @@ window.addEventListener('DOMContentLoaded', () => {
 
 
     // Event listeners for buttons
+    document.getElementById('connectBtn').addEventListener('click', () => {
+        connectSensors();
+    });
     document.getElementById('startBtn').addEventListener('click', () => {
         startData();
     });
@@ -142,22 +167,37 @@ window.addEventListener('DOMContentLoaded', () => {
     });
 
     // functions to handle buttons clicks
+    function safeSend(commandObj) {
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            console.log("Sending:", commandObj, "Socket state:", socket.readyState);
+            socket.send(JSON.stringify(commandObj));
+        } else {
+            console.warn("WebSocket not open yet. Delaying send...");
+            setTimeout(() => safeSend(commandObj), 100); // Retry after 100ms
+        }
+    }
+
+    function connectSensors() {
+        safeSend({ command: "connect" });
+        document.getElementById("status").textContent = "Connecting...";
+    }
+
     function startData() {
-        socket.send(JSON.stringify({ command: "start" }));
+        safeSend({ command: "start" });
         document.getElementById("status").textContent = "Streaming...";
         document.getElementById("startBtn").disabled = true;
         document.getElementById("stopBtn").disabled = false;
     }
 
     function stopData() {
-        socket.send(JSON.stringify({ command: "stop" }));
+        safeSend({ command: "stop" });
         document.getElementById("status").textContent = "Stopped";
         document.getElementById("startBtn").disabled = false;
         document.getElementById("stopBtn").disabled = true;
     }
 
     function resetCharts() {
-        socket.send(JSON.stringify({ command: "reset" }));
+        safeSend({ command: "reset" });
         document.getElementById("status").textContent = "Resetting...";
 
         previousAltitude = null;
