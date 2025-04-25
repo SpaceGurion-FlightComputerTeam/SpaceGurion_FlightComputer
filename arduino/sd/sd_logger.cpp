@@ -4,25 +4,22 @@ const char *filename = "/telemetry.txt";
 bool loggingEnabled = true;
 unsigned long baseTime = 0;
 
+//update
 void initSDCard() {
-  if (!SD.begin(SD_CS_PIN)) {
-    Serial.println("❌ SD card initialization failed!");
-    while (true);
-  }
-  Serial.println("✅ SD card initialized.");
+  SPI.begin(sck, miso, mosi, cs);
+  if (!SD.begin(cs)) {
+    if (!SD.begin()) {
+      Serial.println("Card Mount Failed");
+      return;
+    }
+    uint8_t cardType = SD.cardType();
 
-  File file = SD.open(filename, FILE_WRITE);
-  if (file) {
-    file.println("Timestamp,GNSS_Lat,GNSS_Lon,Temperature,Pressure,Altitude");
-    file.close();
-    Serial.println("Telemetry file created.");
-  } else {
-    Serial.println("❌ Error creating telemetry file.");
+    if (cardType == CARD_NONE) {
+      Serial.println("No SD card attached");
+      return;
+    }
   }
-
-  baseTime = millis();
 }
-
 void startLogging() {
   if (SD.exists(filename)) {
     SD.remove(filename);
@@ -64,17 +61,21 @@ void readSDFile() {
     Serial.println("❌ Error opening telemetry file for reading.");
   }
 }
+//update
+void writeToSD(String message) {
 
-void writeToSD(String dataLine) {
-  File file = SD.open(filename, FILE_WRITE);
-  if (file) {
-    file.seek(file.size());
-    file.println(dataLine);
-    file.close();
-    Serial.println("Log line written to SD.");
-  } else {
-    Serial.println("❌ Error opening telemetry file for writing.");
+
+  File file = fs.open(filename, FILE_WRITE);
+  if (!file) {
+    Serial.println("Failed to open file for writing");
+    return;
   }
+  if (file.print(message)) {
+    Serial.println("File written");
+  } else {
+    Serial.println("Write failed");
+  }
+  file.close();
 }
 
 void processSerialCommands() {
@@ -83,18 +84,14 @@ void processSerialCommands() {
     command.trim();
     if (command.equalsIgnoreCase("stop")) {
       stopLogging();
-    }
-    else if (command.equalsIgnoreCase("start")) {
+    } else if (command.equalsIgnoreCase("start")) {
       startLogging();
-    }
-    else if (command.equalsIgnoreCase("continue")) {
+    } else if (command.equalsIgnoreCase("continue")) {
       continueLogging();
-    }
-    else if (command.equalsIgnoreCase("read")) {
+    } else if (command.equalsIgnoreCase("read")) {
       Serial.println("Reading telemetry file:");
       readSDFile();
-    }
-    else {
+    } else {
       Serial.println("Unknown command. Use 'stop', 'start', 'continue' or 'read'.");
     }
   }
