@@ -6,7 +6,8 @@ import os
 import asyncio
 import math
 import json
-import websockets
+from GroundTelemetryReciever import serial_line_generator
+# import websockets
 
 CLIENTS = set() # Set to keep track of connected WebSocket clients
 is_reading = False # Flag to indicate if data is being read and written
@@ -94,6 +95,12 @@ def generate_realistic_data(iteration, dt=0.1):
     
     return temperature, pressure, altitude, gyro_x, gyro_y, gyro_z, accel_x, accel_y, accel_z
 
+#Receive Telemtry Data And Export 
+def TelemetryToJson():
+    #Receive Telemetry Data
+    for line in serial_line_generator():
+        print(f"Received: {line}")
+
 
 # Broadcast JSON data to all connected clients
 # This function sends the data to GUI visualization in real-time.
@@ -152,7 +159,7 @@ async def read_and_write_data():
 
     # Create a new CSV file and write the header
     ############## TODO: Decide on a uniform format for the data JSON + add GPS data columns ###############
-    # current format is: [Timestamp, Temperature, Pressure, Altitude, Gyro X, Gyro Y, Gyro Z, Accel X, Accel Y, Accel Z]
+    # current format is:[Temp,Pressure,Altitude,ax,ay,az,gx,gy,gz,mx,my,mz,latitude,longtitude]
     with open(csv_file, 'w', newline='') as file:
         writer = csv.writer(file)
         writer.writerow(['Timestamp', 'Temperature', 'Pressure', 'Altitude',
@@ -199,4 +206,4 @@ async def read_and_write_data():
             break
         
     
-    
+TelemetryToJson()
