@@ -16,9 +16,24 @@
 </head>
 
 <body>
+
   <div id="sidebar">
 
-    <div class="module">
+    <div id="dashboardHeader" style="
+       display: block;
+       width: 100%;
+       text-align: center;
+       font-size: 25px;
+       font-weight: bold;
+       color: #00FFCC;
+       margin: 0 0;
+       text-shadow: 0 0 8px #00FFCC;
+       grid-column: 1/span 3;
+      ">
+      🚀 SpaceGurion Flight Dashboard 🚀
+    </div>
+
+    <div class="module"> 
       <h2>Telemetry</h2>
       <div class="grid">
         <div class="stat">Roll: <span id="rollStat">0.0°</span></div>
@@ -29,7 +44,27 @@
         <div class="stat">Status: <span id="status">Idle</span></div>
       </div>
 
-      <div style="margin-top: 50px; margin-bottom: 50px;" id="controls">
+      <h2>Barometer</h2>
+      <div class="grid">
+        <div class="stat">Temperature: <span id="temperatureStat">0.0</span> °C</div>
+        <div class="stat">Pressure: <span id="pressureStat">0.0</span> hPa</div>
+      </div>
+
+      <h2>GPS Position</h2>
+      <div class="grid">
+        <div class="stat">Latitude (Y): <span id="gpsLatStat">0.000000</span></div>
+        <div class="stat">Longitude (X): <span id="gpsLonStat">0.000000</span></div>
+      </div>
+
+      <h2>Status</h2>
+      <div class="grid">
+        <div class="stat">Sensors: <span id="connectionStatus">Not Connected</span></div>
+        <div class="stat">stat2: <span id="velZStat2">Idle</span></div>
+        <div class="stat">stat3: <span id="pitchStat2">Idle</span></div>
+        <div class="stat">stat4: <span id="altStat2">Idle</span></div>
+      </div>
+
+      <div style="margin-top: 10px; margin-bottom: 10px;" id="controls">
         <h2>Controls</h2>
         <div class="switch">
           <input type="checkbox" id="modelCheckbox" checked>
@@ -45,22 +80,30 @@
         </div>
       </div>
 
-      <h2>Status</h2>
-      <div class="grid">
-        <div class="stat">Sensors: <span id="connectionStatus">Not Connected</span></div>
-        <div class="stat">stat2: <span id="velZStat2">Idle</span></div>
-        <div class="stat">stat3: <span id="pitchStat2">Idle</span></div>
-        <div class="stat">stat4: <span id="altStat2">Idle</span></div>
-        <div class="stat">stat5: <span id="yawStat2">Idle</span></div>
-        <div class="stat">stat6: <span id="status2">Idle</span></div>
-      </div>
+      
 
     </div>
 
+
     <div class="module main">
-      <div class="sceneBorder" id="sceneContainer">
+      <div class="sceneBorder" id="sceneContainer" style="position: relative;">
         <!-- 3D scene will be rendered here -->
+
+        <div id="missionTimer" style="
+               position: absolute;
+               top: 10px;
+               left: 50%;
+               transform: translateX(-50%);
+               color: #00FFCC;
+               font-size: 20px;
+               font-weight: bold;
+               background-color: rgba(0, 0, 0, 0.5);
+               padding: 5px 10px;
+               border-radius: 8px;">
+          T+ 00:00
+        </div>
       </div>
+
       <div id="axisLegend">
         <div><span class="axisColor red"></span>X-axis (Roll)</div>
         <div><span class="axisColor green"></span>Y-axis (Pitch)</div>
@@ -91,13 +134,13 @@
       <button class="btn" id="stopBtn">Stop Data Plotting</button>
       <button class="btn secondary" id="clearBtn">Clear Charts</button>
     </div>
-   
-    <script src="js/three.min.js"></script>
-    <script src="js/chart.min.js"></script>
-    <script src="js/loaders/GLTFLoader.js"></script>
-    <script src="js/loaders/DRACOLoader.js"></script>
-    <script src="js/model.js"></script>
-    <script src="js/charts.js"></script>
+  </div>
+  <script src="js/three.min.js"></script>
+  <script src="js/chart.min.js"></script>
+  <script src="js/loaders/GLTFLoader.js"></script>
+  <script src="js/loaders/DRACOLoader.js"></script>
+  <script src="js/model.js"></script>
+  <script src="js/charts.js"></script>
 
 </body>
 

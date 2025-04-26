@@ -86,11 +86,13 @@ window.addEventListener('DOMContentLoaded', () => {
     let previousAltitude = null;
     let previousTimestamp = null;
 
-    
+
     document.getElementById("connectBtn").disabled = true;
     document.getElementById("startBtn").disabled = true;
     document.getElementById("stopBtn").disabled = true;
-        
+
+
+    let missionTimerStarted = false;
 
     const socket = new WebSocket('ws://localhost:8765');
     socket.onmessage = (event) => {
@@ -108,6 +110,12 @@ window.addEventListener('DOMContentLoaded', () => {
                 document.getElementById("connectionStatus").textContent = "❌ Connection failed";
             }
             return;
+        }
+        
+        // Start mission timer when first telemetry packet arrives
+        if (!missionTimerStarted && data.Frame === 1) {
+            startMissionTimer();
+            missionTimerStarted = true;
         }
 
         // Format timestamp for display (can be adjusted as needed)
@@ -132,13 +140,13 @@ window.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    
+
     socket.onopen = () => {
-        console.log("WebSocket connected !!!"); 
+        console.log("WebSocket connected");
         document.getElementById("connectBtn").disabled = false;
     }
     socket.onerror = (err) => console.error("WebSocket error:", err);
- 
+
     function updateChart(chart, label, value) {
         chart.data.labels.push(label);
         chart.data.datasets[0].data.push(value);
@@ -152,6 +160,33 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
 
+
+    // ----------------------------- Function for mission timer------------------------
+    let missionStartTime = null;
+    let missionTimerInterval = null;
+
+    function startMissionTimer() {
+        missionStartTime = Date.now();
+        missionTimerInterval = setInterval(updateMissionTimer, 1000);
+    }
+
+    
+    function updateMissionTimer() {
+        const now = Date.now();
+        const elapsedMs = now - missionStartTime;
+        const seconds = Math.floor(elapsedMs / 1000) % 60;
+        const minutes = Math.floor(elapsedMs / 60000);
+
+        const formattedTime = `T+ ${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        document.getElementById('missionTimer').textContent = formattedTime;
+    }
+
+    function stopMissionTimer() {
+        clearInterval(missionTimerInterval);
+        //document.getElementById('missionTimer').textContent = "T+ 00:00";
+    }
+
+
     // ----------------------------- Function for buttons click------------------------
     // Event listeners for buttons
     document.getElementById('connectBtn').addEventListener('click', () => {
@@ -161,6 +196,7 @@ window.addEventListener('DOMContentLoaded', () => {
         startData();
     });
     document.getElementById('stopBtn').addEventListener('click', () => {
+        stopMissionTimer(); // Stop the mission timer when data stops
         stopData();
     });
     document.getElementById('clearBtn').addEventListener('click', () => {

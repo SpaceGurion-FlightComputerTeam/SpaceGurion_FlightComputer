@@ -62,7 +62,7 @@
   }
 
   h2 {
-    margin: 0 0 10px;
+    margin: 8px 0 4px 0;
     font-size: 14px;
     color: #6ec1ff;
     text-transform: uppercase;
@@ -83,9 +83,9 @@
   }
 
   .switch {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    margin: 8px 0;
+    margin: 8px 8px;
   }
 
   .btn {
@@ -121,7 +121,7 @@
   .grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 8px 16px;
+    gap: 2px 16px;
   }
 
   .chart-container {
