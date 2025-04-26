@@ -152,6 +152,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
 
+    // ----------------------------- Function for buttons click------------------------
     // Event listeners for buttons
     document.getElementById('connectBtn').addEventListener('click', () => {
         connectSensors();
