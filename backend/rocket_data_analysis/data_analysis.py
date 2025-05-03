@@ -6,7 +6,7 @@ import os
 import asyncio
 import math
 import json
-from GroundTelemetryReciever import serial_line_generator
+from rocket_data_analysis.GroundTelemetryReciever import serial_line_generator
 # import websockets
 
 CLIENTS = set() # Set to keep track of connected WebSocket clients
@@ -17,84 +17,129 @@ is_connected = False # Flag to indicate if the sensor is connected
 # TODO: Replace with actual sensor data acquisition function
 def generate_realistic_data(iteration, dt=0.1):
     """
-    Generate realistic sensor data for a model rocket flight.
+    Generate realistic sensor data for a ~1 km model rocket flight.
     
-    Parameters:
-        iteration: Current iteration (used to calculate flight time)
-        dt: Time step between iterations in seconds (default: 0.1)
+    Phases:
+      1. Pad (0–1 s): rocket sits, small vibrations
+      2. Powered ascent (1–4 s): high upward accel from motor
+      3. Coast (4–14 s): rise under gravity, then begin descent
+      4. Parachute descent (14–54 s): slow descent at terminal velocity
     
-    Returns:
-        Tuple of sensor readings: temperature, pressure, altitude, 
-        gyro_x, gyro_y, gyro_z, accel_x, accel_y, accel_z
+    Returns a dict of:
+        Temperature (°C), Pressure (kPa), Altitude (m),
+        Accel X/Y/Z (m/s²), Gyro X/Y/Z (°/s),
+        Mag X/Y/Z (μT), Latitude, Longitude
     """
-    # Calculate flight time
-    time_elapsed = iteration * dt
-    
-    # Flight phases (in seconds)
-    launch_phase = 2.0
-    powered_ascent = 5.0
-    coast_phase = 15.0
-    descent_phase = 40.0
-    
-    # Base environmental values
-    base_temp = 15.0  # degrees Celsius
-    base_pressure = 101.3  # kPa (sea level)
-    
-    # Determine flight phase and calculate altitude
-    if time_elapsed < launch_phase:
-        # Launch phase - sitting on pad or initial launch
-        altitude = 0.1 * time_elapsed**2 + random.uniform(-0.1, 0.1)
-        accel_z = 15.0 + random.uniform(-1, 1)
-        
-    elif time_elapsed < (launch_phase + powered_ascent):
-        # Powered ascent - rapid acceleration upward
-        altitude = 50 * (time_elapsed - launch_phase)**2 + random.uniform(-1, 2)
-        accel_z = 30.0 + random.uniform(-3, 3)
-        
-    elif time_elapsed < (launch_phase + powered_ascent + coast_phase):
-        # Coast phase - decreasing vertical acceleration, increasing horizontal drift
-        t = time_elapsed - (launch_phase + powered_ascent)
-        altitude = 50 * powered_ascent**2 + 80 * t - 9.8 * t**2/2 + random.uniform(-2, 2)
-        accel_z = -9.8 + random.uniform(-1, 1)  # Gravity plus fluctuations
-        
-    else:
-        # Descent phase - parachute deployed
-        t = time_elapsed - (launch_phase + powered_ascent + coast_phase)
-        max_altitude = 50 * powered_ascent**2 + 80 * coast_phase - 9.8 * coast_phase**2/2
-        descent_factor = np.exp(-0.1 * t)  # Exponential decay for parachute descent
-        altitude = max(0, max_altitude * descent_factor) + random.uniform(-5, 5)
-        accel_z = -2.0 + random.uniform(-0.5, 0.5)  # Slower descent due to parachute
-    
-    # Cap altitude at maximum
-    altitude = min(altitude, 2000)
-    
-    # Temperature: slowly decreases with altitude (~6.5°C/km) + some noise
-    temperature = base_temp - (altitude / 1000 * 6.5) + random.uniform(-0.5, 0.5)
-    
-    # Pressure decreases with altitude (simplified barometric formula)
-    pressure = base_pressure * np.exp(-0.00012 * altitude) + random.uniform(-0.2, 0.2)
-    
-    # Gyroscope data - higher oscillations during powered flight, dampening during descent
-    if time_elapsed < (launch_phase + powered_ascent):
-        # More wobble during powered ascent
-        intensity = 2.0
-    elif time_elapsed < (launch_phase + powered_ascent + coast_phase):
-        # Less wobble during coast
-        intensity = 1.0
-    else:
-        # Slow rotation during descent (parachute effect)
-        intensity = 0.5
-    
-    gyro_x = np.sin(time_elapsed / 2) * intensity + random.uniform(-0.2, 0.2)
-    gyro_y = np.cos(time_elapsed / 3) * intensity + random.uniform(-0.2, 0.2)
-    gyro_z = np.sin(time_elapsed / 5) * intensity * 1.5 + random.uniform(-0.3, 0.3)
-    
-    # Accelerometer data (x and y components simulate drift and wind effects)
-    accel_x = np.sin(time_elapsed / 7) * 1.5 + random.uniform(-0.5, 0.5)
-    accel_y = np.cos(time_elapsed / 9) * 1.5 + random.uniform(-0.5, 0.5)
-    
-    return temperature, pressure, altitude, gyro_x, gyro_y, gyro_z, accel_x, accel_y, accel_z
+    # Time
+    t = iteration * dt
 
+    # Phase durations
+    t_pad = 1.0
+    t_burn = 3.0
+    t_coast = 10.0
+    t_descent = 40.0
+    total = t_pad + t_burn + t_coast + t_descent
+
+    # Base environmental constants
+    T0 = 288.15       # Sea‐level temperature (K)
+    L = 0.0065        # Temperature lapse rate (K/m)
+    P0 = 101.325      # Sea‐level pressure (kPa)
+    g0 = 9.80665      # Gravity (m/s²)
+    R = 287.05        # Specific gas constant for dry air (J/(kg·K))
+
+    # Launch site
+    launch_lat = 37.8651
+    launch_lon = -119.5383
+
+    # Kinematic state
+    # Precompute end‐of‐burn velocity & altitude
+    a_burn = 30.0               # avg thrust accel (m/s²)
+    v_burn_end = a_burn * t_burn
+    h_burn_end = 0.5 * a_burn * t_burn**2
+
+    # Altitude, velocity, acceleration
+    if t < t_pad:
+        # Pad: small random shake around 0
+        altitude = 0.0
+        velocity = 0.0
+        accel_z = g0 + random.uniform(-0.2, 0.2)
+    elif t < t_pad + t_burn:
+        # Powered ascent
+        tb = t - t_pad
+        altitude = 0.5 * a_burn * tb**2
+        velocity = a_burn * tb
+        accel_z = a_burn + random.uniform(-2, 2)
+    elif t < t_pad + t_burn + t_coast:
+        # Coast up then begin descent under gravity
+        tc = t - (t_pad + t_burn)
+        # vertical velocity under gravity
+        velocity = v_burn_end - g0 * tc
+        altitude = h_burn_end + v_burn_end * tc - 0.5 * g0 * tc**2
+        accel_z = -g0 + random.uniform(-0.5, 0.5)
+    else:
+        # Parachute descent at approx terminal velocity ~5 m/s
+        td = t - (t_pad + t_burn + t_coast)
+        altitude_coast_end = max(0, h_burn_end + v_burn_end * t_coast - 0.5 * g0 * t_coast**2)
+        v_term = 5.0  # m/s
+        altitude = max(0, altitude_coast_end - v_term * td)
+        velocity = -v_term
+        accel_z = random.uniform(-0.3, 0.3)
+
+    # Clamp
+    altitude = max(0.0, altitude)
+
+    # Horizontal small jitter on pad/coast, wind drift later
+    if t < t_pad:
+        accel_x = random.uniform(-0.2, 0.2)
+        accel_y = random.uniform(-0.2, 0.2)
+    else:
+        accel_x = random.uniform(-1.0, 1.0)
+        accel_y = random.uniform(-1.0, 1.0)
+
+    # Gyros simulate small oscillations + initial roll torque
+    if t < t_pad:
+        gyro_x = random.uniform(-0.1, 0.1)
+        gyro_y = random.uniform(-0.1, 0.1)
+        gyro_z = random.uniform(-0.1, 0.1)
+    elif t < t_pad + t_burn:
+        gyro_x = 20.0 * math.sin(5* (t - t_pad)) + random.uniform(-1, 1)
+        gyro_y = 20.0 * math.cos(4* (t - t_pad)) + random.uniform(-1, 1)
+        gyro_z = 50.0 * math.exp(-0.5*(t - t_pad)) + random.uniform(-2, 2)
+    elif t < t_pad + t_burn + t_coast:
+        gyro_x = 5.0 * math.sin(2* (t - t_pad - t_burn)) + random.uniform(-0.5, 0.5)
+        gyro_y = 5.0 * math.cos(2* (t - t_pad - t_burn)) + random.uniform(-0.5, 0.5)
+        gyro_z = 5.0 * math.exp(-0.2*(t - t_pad - t_burn)) + random.uniform(-0.5, 0.5)
+    else:
+        gyro_x = random.uniform(-0.3, 0.3)
+        gyro_y = random.uniform(-0.3, 0.3)
+        gyro_z = random.uniform(-0.2, 0.2)
+
+    # Barometric atmosphere model
+    temperature = (T0 - L * altitude) + random.uniform(-0.5, 0.5)  # in K
+    temperature_c = temperature - 273.15                         # in °C
+
+    pressure = P0 * (temperature / T0) ** (g0 / (R * L))          # in kPa
+    pressure += random.uniform(-0.1, 0.1)
+
+    # Magnetometer (simple Earth field + noise)
+    base_mag_x, base_mag_y, base_mag_z = 20.0, 0.0, 40.0
+    mag_x = base_mag_x + random.uniform(-1, 1)
+    mag_y = base_mag_y + random.uniform(-1, 1)
+    mag_z = base_mag_z + random.uniform(-1, 1)
+
+    # GPS drift: up to ±200 m over flight
+    drift_factor = min(1.0, t / total)
+    max_drift = 200.0  # meters
+    angle = math.radians(45)  # wind direction
+    north = max_drift * drift_factor * math.cos(angle) + random.uniform(-5, 5)
+    east  = max_drift * drift_factor * math.sin(angle) + random.uniform(-5, 5)
+    lat = launch_lat + (north / 111000.0)
+    lon = launch_lon + (east / (111000.0 * math.cos(math.radians(launch_lat))))
+
+    # Return all sensor readings
+    return temperature, pressure, altitude, accel_x, accel_y,  accel_z,gyro_x, gyro_y, gyro_z, mag_x, mag_y, mag_z, lat,  lon
+    
+    
 #Receive Telemtry Data And Export 
 def TelemetryToJson():
     #Receive Telemetry Data
@@ -133,6 +178,9 @@ async def websocket_handler(websocket):
         elif cmd == "stop":
             is_reading = False
             print("Data generation stopped.")
+        elif cmd == "abort":
+            # Add logic to abort the mission here
+            print("Mission Aborted")
     try:
         await websocket.wait_closed()   # Wait for the client to close the connection 
     finally:
@@ -163,47 +211,61 @@ async def read_and_write_data():
     with open(csv_file, 'w', newline='') as file:
         writer = csv.writer(file)
         writer.writerow(['Timestamp', 'Temperature', 'Pressure', 'Altitude',
-                        'Gyro X', 'Gyro Y', 'Gyro Z', 'Accel X', 'Accel Y', 'Accel Z'])
+                         'Accel X', 'Accel Y', 'Accel Z', 'Gyro X', 'Gyro Y', 'Gyro Z', 'MX', 'MY', 'MZ', 'Latitude', 'Longitude'])
         file.flush()    # Ensure the header is written immediately
 
    
     iteration = 0   # Initialize iteration counter for data generation. delete this line if not needed
-    start_time = time.time()
+    start_time = None
+    frame_counter = 0
     
     # Main loop to write data to CSV and broadcast to WebSocket clients
     while True:
         try:
-            data = generate_realistic_data(iteration)  # replace with actual sensor data acquisition function
-            timestamp = time.time() - start_time
-            formatted_data = [f"{timestamp:.3f}"] + [f"{value:.3f}" for value in data]  # Format data to 3 decimal places, change if needed
             if is_reading:
+                if start_time is None:
+                    start_time = time.time()  # Start the timer when reading starts
+
+                data = generate_realistic_data(iteration)  # replace with actual sensor data acquisition function
+                timestamp = time.time() - start_time
+                formatted_data = [f"{timestamp:.3f}"] + [f"{value:.6f}" for value in data]  # Format data to 3 decimal places, change if needed
+            
                 with open(csv_file, 'a', newline='') as file:
                     writer = csv.writer(file)
                     writer.writerow(formatted_data) # Write the data to the CSV file
                     file.flush()  # Ensure the data is written immediately
                 
+                frame_counter += 1  # Increment frame number each time
+                
                 # Send the data to WebSocket clients using JSON format, change to uniform format if needed
                 json_data = {
-                    "Timestamp": formatted_data[0],
-                    "Temperature": formatted_data[1],
-                    "Pressure": formatted_data[2],
-                    "Altitude": formatted_data[3],
-                    "Gyro X": formatted_data[4],
-                    "Gyro Y": formatted_data[5],
-                    "Gyro Z": formatted_data[6],
-                    "Accel X": formatted_data[7],
-                    "Accel Y": formatted_data[8],
-                    "Accel Z": formatted_data[9],
+                    "Frame": frame_counter, 
+                    "time": formatted_data[0],
+                    "temp": formatted_data[1],
+                    "pres": formatted_data[2],
+                    "altitude": formatted_data[3],
+                    "ax": formatted_data[4],
+                    "ay": formatted_data[5],
+                    "az": formatted_data[6],
+                    "gx": formatted_data[7],
+                    "gy": formatted_data[8],
+                    "gz": formatted_data[9],
+                    "mx": formatted_data[10],
+                    "my": formatted_data[11],
+                    "mz": formatted_data[12],
+                    "latitude": formatted_data[13],
+                    "longitude": formatted_data[14]                                     
                 }
                 await broadcast(json_data)  # Broadcast the data to all connected clients
                 print(f"Broadcasting data: {json_data}")   # log for debugging (optional)
         
-            iteration += 1              # Increment the iteration counter
+                iteration += 1              # Increment the iteration counter
             await asyncio.sleep(0.1)    # add a small delay to simulate real-time data generation
 
         except asyncio.CancelledError:
             print("Process interrupted.")
             break
-        
-    
-TelemetryToJson()
+
+
+#TelemetryToJson()
+

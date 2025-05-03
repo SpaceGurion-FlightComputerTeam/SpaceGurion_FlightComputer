@@ -7,10 +7,6 @@ import websockets
 
 ####### TODO: #######
 # 1. Add error handling and logging for better debugging and monitoring
-# 2. Add option to connect to webSockect through button in the dashboard
-# 3. Add option to start and stop data generation and transmition from the dashboard
-# 4. Do not start the program immediately, wait for the user to click the button in the dashboard (add a button in the dashboard to start the program)
-
 
 # this function is used to start the HTTP server and open the dashboard in a web browser
 # it is called in the main function
