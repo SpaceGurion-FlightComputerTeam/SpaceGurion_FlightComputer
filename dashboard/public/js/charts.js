@@ -1,3 +1,6 @@
+import { addMessageListener } from './sockets.js';
+import { send } from './sockets.js';
+
 // Create charts for Altitude and Velocity
 // Using Chart.js for rendering the charts
 window.addEventListener('DOMContentLoaded', () => {
@@ -49,8 +52,8 @@ window.addEventListener('DOMContentLoaded', () => {
                 y: {
                     ...commonOptions.scales.y,
                     min: 0,
-                    max: 2500,
-                    ticks: { color: '#aaa', stepSize: 200 }
+                    max: 1500,
+                    ticks: { color: '#aaa', stepSize: 100 }
                 }
             }
         }
@@ -94,11 +97,10 @@ window.addEventListener('DOMContentLoaded', () => {
 
     let missionTimerStarted = false;
 
-    const socket = new WebSocket('ws://localhost:8765');
-    socket.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        console.log("[Data]", data); // Check if data is still coming in
 
+   // const socket = new WebSocket('ws://localhost:8765');
+    addMessageListener((data) => {
+        console.log("[Data]", data); // Check if data is still coming in
         // If it's a status message
         if (data.status) {
             if (data.status === "connected") {
@@ -119,8 +121,12 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         // Format timestamp for display (can be adjusted as needed)
-        const timestamp = data.Timestamp || new Date().toISOString();
-        const altitude = parseFloat(data["Altitude"]);
+        const timestamp = parseFloat(data["time"]) || 0;
+        const altitude = parseFloat(data["altitude"]) || 0;
+        const tempartue = parseFloat(data["temp"]) || 0;
+        const pressure = parseFloat(data["pres"]) || 0;
+        const latitude = parseFloat(data["latitude"]) || 0;
+        const longitude = parseFloat(data["longitude"]) || 0;
 
         // Calculate velocity more accurately with actual time difference
         let velocityZ = 0;
@@ -138,14 +144,13 @@ window.addEventListener('DOMContentLoaded', () => {
             document.getElementById("altStat").textContent = altitude.toFixed(1);
             document.getElementById("velZStat").textContent = velocityZ.toFixed(1);
         });
-    };
 
-
-    socket.onopen = () => {
-        console.log("WebSocket connected");
-        document.getElementById("connectBtn").disabled = false;
-    }
-    socket.onerror = (err) => console.error("WebSocket error:", err);
+        // Update other stats
+        document.getElementById("temperatureStat").textContent = tempartue.toFixed(1);
+        document.getElementById("pressureStat").textContent = pressure.toFixed(1);
+        document.getElementById("gpsLatStat").textContent = latitude.toFixed(6);
+        document.getElementById("gpsLonStat").textContent = longitude.toFixed(6);
+    });
 
     function updateChart(chart, label, value) {
         chart.data.labels.push(label);
@@ -169,7 +174,6 @@ window.addEventListener('DOMContentLoaded', () => {
         missionStartTime = Date.now();
         missionTimerInterval = setInterval(updateMissionTimer, 1000);
     }
-
     
     function updateMissionTimer() {
         const now = Date.now();
@@ -192,49 +196,49 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('connectBtn').addEventListener('click', () => {
         connectSensors();
     });
+    document.getElementById("abortBtn").addEventListener('click', () => {
+      Abort();  
+    })
     document.getElementById('startBtn').addEventListener('click', () => {
         startData();
     });
     document.getElementById('stopBtn').addEventListener('click', () => {
-        stopMissionTimer(); // Stop the mission timer when data stops
+        //stopMissionTimer(); // Stop the mission timer when data stops
         stopData();
     });
     document.getElementById('clearBtn').addEventListener('click', () => {
         resetCharts();
     });
 
-    // functions to handle buttons clicks
-    function safeSend(commandObj) {
-        if (socket && socket.readyState === WebSocket.OPEN) {
-            console.log("Sending:", commandObj, "Socket state:", socket.readyState);
-            socket.send(JSON.stringify(commandObj));
-        } else {
-            console.warn("WebSocket not open yet. Delaying send...");
-            setTimeout(() => safeSend(commandObj), 100); // Retry after 100ms
-        }
-    }
+
 
     function connectSensors() {
-        safeSend({ command: "connect" });
+        send({ command: "connect" });
         document.getElementById("status").textContent = "Connecting...";
+    }
+    
+    function Abort()
+    {
+        send({ command: "abort" });
+        document.getElementById("status").textContent = "Aborting...";
     }
 
     function startData() {
-        safeSend({ command: "start" });
+        send({ command: "start" });
         document.getElementById("status").textContent = "Streaming...";
         document.getElementById("startBtn").disabled = true;
         document.getElementById("stopBtn").disabled = false;
     }
 
     function stopData() {
-        safeSend({ command: "stop" });
+        send({ command: "stop" });
         document.getElementById("status").textContent = "Stopped";
         document.getElementById("startBtn").disabled = false;
         document.getElementById("stopBtn").disabled = true;
     }
 
     function resetCharts() {
-        safeSend({ command: "reset" });
+        send({ command: "reset" });
         document.getElementById("status").textContent = "Resetting...";
 
         previousAltitude = null;
