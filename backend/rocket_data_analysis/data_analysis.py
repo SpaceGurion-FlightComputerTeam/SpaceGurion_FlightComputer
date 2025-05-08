@@ -6,7 +6,7 @@ import os
 import asyncio
 import math
 import json
-from rocket_data_analysis.GroundTelemetryReciever import serial_line_generator
+from GroundTelemetryReciever import serial_line_generator
 # import websockets
 
 CLIENTS = set() # Set to keep track of connected WebSocket clients
@@ -267,5 +267,5 @@ async def read_and_write_data():
             break
 
 
-#TelemetryToJson()
+TelemetryToJson()
 
