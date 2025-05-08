@@ -15,7 +15,7 @@
 #include <Wire.h>
 #define SEA_LEVEL_PRESSURE_HPA 1013.25
 #include "SparkFun_u-blox_GNSS_Arduino_Library.h"
-#define XBEE_RX 16  // ESP32 RX pin connected to XBee TX
+#define XBEE_RX 16  // E SP32 RX pin connected to XBee TX
 #define XBEE_TX 17  // ESP32 TX pin connected to XBee RX
 #define SD_CS_PIN 5
 #define I2C_DATA  115200

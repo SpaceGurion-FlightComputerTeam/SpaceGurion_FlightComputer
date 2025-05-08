@@ -54,7 +54,7 @@ void printDMS(double lat, double lon) {
 ////////////////////////////////////////////////////////////
 void setup() {
   Serial.begin(I2C_DATA);
-  start_socket(115200,  XBEE_RX, XBEE_TX);
+  start_socket(9600,  XBEE_RX, XBEE_TX);
  // initSDCard();
   baseTime = millis();
   
