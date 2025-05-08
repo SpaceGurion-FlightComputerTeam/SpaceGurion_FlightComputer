@@ -7,7 +7,7 @@
 #include <Adafruit_BMP280.h>
 #include <Arduino.h>
 #include <SPI.h>
-#include <SD.h>
+// #include <SD.h>
 #include <Wire.h>
 #define SEA_LEVEL_PRESSURE_HPA 1013.25
 #include "SparkFun_u-blox_GNSS_Arduino_Library.h"

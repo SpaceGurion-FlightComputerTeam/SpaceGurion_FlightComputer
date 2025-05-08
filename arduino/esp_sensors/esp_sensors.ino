@@ -4,7 +4,7 @@
 #include "coumunication.h"
 #include "barometer.h"
 #include "helper.h"
-#include "sd_logger.h"
+
 
 // ----- GNSS Setup ----- (gps)
 const char *filename = "/telemetry.txt";
@@ -54,8 +54,8 @@ void printDMS(double lat, double lon) {
 ////////////////////////////////////////////////////////////
 void setup() {
   Serial.begin(I2C_DATA);
-  start_socket(115200,  XBEE_RX, XBEE_TX);
-  initSDCard();
+  start_socket(9600,  XBEE_RX, XBEE_TX);
+  //initSDCard();
   baseTime = millis();
   
   // ----- I2C Initialization -----
@@ -76,6 +76,7 @@ void setup() {
   delay(LOG_TIME); // Delay between log entries; adjust as needed.
   
   Serial.println("Setup complete.\n");
+  send("Ready");
 }
 
 ////////////////////////////////////////////////////////////
@@ -83,7 +84,7 @@ void setup() {
 ////////////////////////////////////////////////////////////
 void loop() {
   // Process any serial commands first.
-  processSerialCommands();
+  //processSerialCommands();
 
   // Only log sensor data if logging is enabled.
   if (loggingEnabled) {
@@ -116,7 +117,7 @@ void loop() {
     String logLine =  bmpData+";"+ readIMU()+ ";" +gnssData ;
     
     Serial.println("Log line: " + logLine);
-    writeToSD(logLine);
+    //writeToSD(logLine);
     send(logLine);
   }
   
