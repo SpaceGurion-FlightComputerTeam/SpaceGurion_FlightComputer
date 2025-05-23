@@ -6,7 +6,7 @@ import os
 import asyncio
 import math
 import json
-from GroundTelemetryReciever import serial_line_generator
+from rocket_data_analysis.GroundTelemetryReciever import serial_line_generator
 # import websockets
 
 CLIENTS = set() # Set to keep track of connected WebSocket clients
@@ -137,8 +137,30 @@ def generate_realistic_data(iteration, dt=0.1):
     lon = launch_lon + (east / (111000.0 * math.cos(math.radians(launch_lat))))
 
     # Return all sensor readings
-    return temperature, pressure, altitude, accel_x, accel_y,  accel_z,gyro_x, gyro_y, gyro_z, mag_x, mag_y, mag_z, lat,  lon
-    
+    json_data = {
+                "time": time.time(),  # Timestamp
+                
+                # Barometer data
+                "temp": temperature,
+                "pres": pressure,
+                "altitude": altitude,
+                
+                # IMU data
+                "ax": accel_x,
+                "ay": accel_y,
+                "az": accel_z,
+                "gx": gyro_x,
+                "gy": gyro_y,
+                "gz": gyro_z,
+                "mx": mag_x,
+                "my": mag_y,
+                "mz": mag_z,
+                
+                # GPS data
+                "latitude": lat,
+                "longitude": lon
+    }
+    return json_data
 
 
 # Broadcast JSON data to all connected clients
@@ -274,44 +296,20 @@ async def read_and_write_data():
     # Main loop to write data to CSV and broadcast to WebSocket clients
     while True:
         try:           
-            is_reading = True  # Set the flag to indicate that data is being read, for testing purposes
+            #is_reading = True  # Set the flag to indicate that data is being read, for testing purposes
             if is_reading:
-                data = generate_realistic_data(iteration)  # replace with actual sensor data acquisition function
-                for json_data in TelemetryToJson():
-                    formatted_data = [f"{value:.6f}" for value in json_data.values()]
-                    #formatted_data = [0]+[f"{value:.6f}" for value in data]  # Format the data to 6 decimal places
-                    
-                    print(f"Formatted data: {formatted_data}") # log for debugging (optional)
-                    # Write the data to the CSV file
-                    with open(csv_file, 'a', newline='') as file:
-                        writer = csv.writer(file)
-                        writer.writerow(formatted_data) # Write the data to the CSV file
-                        file.flush()  # Ensure the data is written immediately
-                    # Check if the data is being read
+                json_data = generate_realistic_data(iteration)  # replace with actual sensor data acquisition function
+                #for json_data in TelemetryToJson():
+                formatted_data = [f"{value:.6f}" for value in json_data.values()]
                 
-                # json_data = {
-                # "time": formatted_data[0],  # Timestamp
-                
-                # # Barometer data
-                # "temp": formatted_data[1],
-                # "pres": formatted_data[2],
-                # "altitude": formatted_data[3],
-                
-                # # IMU data
-                # "ax": formatted_data[4],
-                # "ay": formatted_data[5],
-                # "az": formatted_data[6],
-                # "gx": formatted_data[7],
-                # "gy": formatted_data[8],
-                # "gz": formatted_data[9],
-                # "mx": formatted_data[10],
-                # "my": formatted_data[11],
-                # "mz": formatted_data[12],
-                
-                # # GPS data
-                # "latitude": formatted_data[13],
-                # "longitude": formatted_data[14]
-                # }
+                print(f"Formatted data: {formatted_data}") # log for debugging (optional)
+                # Write the data to the CSV file
+                with open(csv_file, 'a', newline='') as file:
+                    writer = csv.writer(file)
+                    writer.writerow(formatted_data) # Write the data to the CSV file
+                    file.flush()  # Ensure the data is written immediately
+                # Check if the data is being read
+            
                 # Send the data to WebSocket clients using JSON format, change to uniform format if needed        
                 await broadcast(json_data)  # Broadcast the data to all connected clients
                 print(f"Broadcasting data: {json_data}")   # log for debugging (optional)
@@ -325,4 +323,4 @@ async def read_and_write_data():
 
 
 #TelemetryToJson()
-asyncio.run(read_and_write_data())
+#asyncio.run(read_and_write_data())
