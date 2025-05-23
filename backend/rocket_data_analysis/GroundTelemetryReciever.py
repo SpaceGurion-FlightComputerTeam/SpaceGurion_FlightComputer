@@ -2,7 +2,7 @@ import serial
 import time
 
 PORT = 'COM5'
-BAUD_RATE = 9600
+BAUD_RATE = 230400
 
 def serial_line_generator(timeout=1):
     try:
@@ -16,6 +16,7 @@ def serial_line_generator(timeout=1):
                     yield line
             else:
                 print("[!] No data received. Waiting...")
+                yield None
             time.sleep(0.1)
 
 
