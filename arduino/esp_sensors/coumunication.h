@@ -5,10 +5,12 @@
 #include "helper.h"
 void start_socket(int rate,int rx,int tx );
 
+String  recive();
 
 void send(String msg);
+void commend();
+void reboot();
 
-String  recive();
 
 
 

@@ -19,5 +19,6 @@
 #define XBEE_TX 17  // ESP32 TX pin connected to XBee RX
 #define SD_CS_PIN 5
 #define I2C_DATA  115200
-#define LOG_TIME 36000
+#define RadioRate 230400
+#define LOG_TIME 360
 #endif
