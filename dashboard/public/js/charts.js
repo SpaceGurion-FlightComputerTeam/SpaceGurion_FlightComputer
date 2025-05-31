@@ -98,7 +98,7 @@ window.addEventListener('DOMContentLoaded', () => {
     let missionTimerStarted = false;
 
 
-    const socket = new WebSocket('ws://localhost:8765');
+
     addMessageListener((data) => {
         console.log("[Data]", data); // Check if data is still coming in
         // If it's a status message

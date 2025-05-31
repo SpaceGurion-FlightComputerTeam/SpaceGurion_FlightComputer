@@ -176,7 +176,7 @@ async def broadcast(data_dict):
 async def websocket_handler(websocket):
     global is_reading, is_connected
     CLIENTS.add(websocket)  # Add the new client to the set of connected clients
-    
+    print("[Backend] New client connected.")
     async for message in websocket:
         data = json.loads(message)
         cmd = data.get("command")
@@ -234,7 +234,7 @@ def TelemetryToJson():
             # Optional: convert all to float (remove if you want strings)
             #values = [float(val) for val in values]
             
-            # # Map to JSON
+            # Map to JSON
             json_data = {
                 "time": values[0],  # Timestamp
                 
