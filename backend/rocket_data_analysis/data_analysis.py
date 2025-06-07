@@ -1,3 +1,4 @@
+import serial
 import random
 import csv
 import time
@@ -6,7 +7,8 @@ import os
 import asyncio
 import math
 import json
-from rocket_data_analysis.GroundTelemetryReciever import serial_line_generator
+from rocket_data_analysis.GroundTelemetryReciever import serial_line_generator, get_next_serial_line
+
 # import websockets
 
 CLIENTS = set() # Set to keep track of connected WebSocket clients
@@ -136,31 +138,13 @@ def generate_realistic_data(iteration, dt=0.1):
     lat = launch_lat + (north / 111000.0)
     lon = launch_lon + (east / (111000.0 * math.cos(math.radians(launch_lat))))
 
-    # Return all sensor readings
-    json_data = {
-                "time": time.time(),  # Timestamp
-                
-                # Barometer data
-                "temp": temperature,
-                "pres": pressure,
-                "altitude": altitude,
-                
-                # IMU data
-                "ax": accel_x,
-                "ay": accel_y,
-                "az": accel_z,
-                "gx": gyro_x,
-                "gy": gyro_y,
-                "gz": gyro_z,
-                "mx": mag_x,
-                "my": mag_y,
-                "mz": mag_z,
-                
-                # GPS data
-                "latitude": lat,
-                "longitude": lon
-    }
-    return json_data
+    # Now: format the line like a real telemetry line (as string, no timestamp!)
+    baro_section = f"{temperature_c:.2f},{pressure:.2f},{altitude:.2f}"
+    imu_section = f"{accel_x:.2f},{accel_y:.2f},{accel_z:.2f},{gyro_x:.2f},{gyro_y:.2f},{gyro_z:.2f},{mag_x:.2f},{mag_y:.2f},{mag_z:.2f}"
+    gps_section = f"{lat:.6f},{lon:.6f}"
+
+    line = f"{baro_section} ; {imu_section} ; {gps_section}"
+    return line
 
 
 # Broadcast JSON data to all connected clients
@@ -205,64 +189,52 @@ async def websocket_handler(websocket):
 
 
 
-
-frame_counter = 0   
-
 #Receive Telemtry Data And Export 
-def TelemetryToJson():
+def TelemetryToJson(line, timestamp):
     json_data = {}
     print("[Backend] Starting telemetry data reception...")
-    start_time = time.time()  # Start the timer when reading starts
 
-    #Receive Telemetry Data
-    for line in serial_line_generator():
-        timestamp = time.time() - start_time
-        
-         # Check if the line is not empty
-        if line != None:
-           # Split into three sections - Barometer, IMU, GPS
-            parts = line.split(";")
-            if len(parts) != 3:
-                raise ValueError("Line does not have three sections separated by ';'")
+    # Split into three sections - Barometer, IMU, GPS
+    sections = line.split(";")
+    if len(sections) != 3:
+        print("[!] Line does not have three ';' sections.")
+        return None
 
-            # Flatten into one list of values (as strings)
-            values = [timestamp]+parts[0].split(",") + parts[1].split(",") + parts[2].split(",")
+    # Flatten into one list of values (as strings)
+    values = []
+    for sec in sections:
+        values += [v.strip() for v in sec.split(",")]
 
-            if len(values) != 15:
-                raise ValueError("Expected 15 values, got {}".format(len(values)))
+    if len(values) != 14:
+        print(f"[!] Expected 14 values, got {len(values)}: {values}")
+        return None
 
-            # Optional: convert all to float (remove if you want strings)
-            #values = [float(val) for val in values]
-            
-            # Map to JSON
-            json_data = {
-                "time": values[0],  # Timestamp
-                
-                # Barometer data
-                "temp": values[1],
-                "pres": values[2],
-                "altitude": values[3],
-                
-                # IMU data
-                "ax": values[4],
-                "ay": values[5],
-                "az": values[6],
-                "gx": values[7],
-                "gy": values[8],
-                "gz": values[9],
-                "mx": values[10],
-                "my": values[11],
-                "mz": values[12],
-                
-                # GPS data
-                "latitude": values[13],
-                "longitude": values[14]
-            }
-        
-        print(f"Received: {line}")
-        print(f"Parsed JSON: {json_data}")
-       
-        yield json_data  # Yield the JSON data for further processing
+    try:
+        values = [float(val) for val in values]
+    except ValueError as e:
+        print(f"[!] Could not convert values to float: {e}")
+        return None
+
+    json_data = {
+        "timestamp": timestamp,
+        "temp": values[0],
+        "pres": values[1],
+        "altitude": values[2],
+        "ax": values[3],
+        "ay": values[4],
+        "az": values[5],
+        "gx": values[6],
+        "gy": values[7],
+        "gz": values[8],
+        "mx": values[9],
+        "my": values[10],
+        "mz": values[11],
+        "latitude": values[12],
+        "longitude": values[13]
+    }
+    return json_data
+
+
 
 async def try_connect_to_sensors():
     try:
@@ -277,8 +249,17 @@ async def try_connect_to_sensors():
         print(f"[Backend] Sensor connection failed: {e}")
         return False
 
+
 # Async function to read, write and stream data
 async def read_and_write_data():
+    """
+    Main async loop:
+    - Reads lines from serial
+    - Converts to JSON/dict (adds timestamp)
+    - Saves to CSV
+    - Broadcasts data to clients
+    """
+    
     csv_file = 'backend/rocket_data_analysis/rocket_data.csv'  # Create a CSV file to store the data
     if os.path.isfile(csv_file):   # Check if the file already exists
         os.remove(csv_file)
@@ -292,34 +273,50 @@ async def read_and_write_data():
         file.flush()    # Ensure the header is written immediately
 
    
+    # Initialize serial port connection - To be moved to try_connect_to_sensors() function
+    PORT = 'COM5'
+    BAUD_RATE = 230400
+    ser = serial.Serial(PORT, BAUD_RATE, timeout=1)
+    start_time = None  # Record the start time for timestamping
     iteration = 0   # Initialize iteration counter for data generation. delete this line if not needed
     # Main loop to write data to CSV and broadcast to WebSocket clients
     while True:
         try:           
             #is_reading = True  # Set the flag to indicate that data is being read, for testing purposes
             if is_reading:
-                json_data = generate_realistic_data(iteration)  # replace with actual sensor data acquisition function
-                #for json_data in TelemetryToJson():
-                formatted_data = [f"{value:.6f}" for value in json_data.values()]
-                
-                print(f"Formatted data: {formatted_data}") # log for debugging (optional)
-                # Write the data to the CSV file
-                with open(csv_file, 'a', newline='') as file:
-                    writer = csv.writer(file)
-                    writer.writerow(formatted_data) # Write the data to the CSV file
-                    file.flush()  # Ensure the data is written immediately
-                # Check if the data is being read
-            
-                # Send the data to WebSocket clients using JSON format, change to uniform format if needed        
-                await broadcast(json_data)  # Broadcast the data to all connected clients
-                print(f"Broadcasting data: {json_data}")   # log for debugging (optional)
-            
-                iteration += 1              # Increment the iteration counter
-                await asyncio.sleep(0.1)    # add a small delay to simulate real-time data generation
+                if start_time is None:
+                    start_time = time.time()
+                    
+                #raw_line = generate_realistic_data(iteration)  # function returns a raw string
+                raw_line = get_next_serial_line(ser)  #1. Read the next line from the serial port
+                if raw_line:
+                    timestamp = round(time.time() - start_time, 3)  # 2. Get the current timestamp
+                    json_data = TelemetryToJson(raw_line, timestamp)  #3. Convert the raw line to JSON data
+                    if json_data:
+                         # 4. Save to CSV
+                        formatted_data = [f"{json_data[key]:.6f}" if isinstance(json_data[key], float) else str(json_data[key])
+                                          for key in json_data]
+                        # Write the data to the CSV file
+                        with open(csv_file, 'a', newline='') as file:
+                            writer = csv.writer(file)
+                            writer.writerow(formatted_data) # Write the data to the CSV file
+                            file.flush()  # Ensure the data is written immediately
+                        # Check if the data is being read
+                                  
+                        # 5. Broadcast the data to all connected clients        
+                        await broadcast(json_data)
+                        print(f"Broadcasting data: {json_data}")   # log for debugging (optional)
+                else:
+                    print("[!] No data received from serial port. Waiting for data...")  
+            iteration += 1              # Increment the iteration counter
+            await asyncio.sleep(0.1)    # add a small delay to simulate real-time data generation
 
         except asyncio.CancelledError:
             print("Process interrupted.")
             break
+        except Exception as e:
+            print(f"[!] Error in read_and_write_data: {e}")
+            await asyncio.sleep(1)  # Wait before retrying
 
 
 #TelemetryToJson()

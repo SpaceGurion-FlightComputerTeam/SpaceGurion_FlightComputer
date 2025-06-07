@@ -1,9 +1,10 @@
 const socket = new WebSocket('ws://localhost:8765');
 const listeners = [];
-
+document.getElementById("connectBtn").disabled = true;
 socket.onopen = () => {
     console.log("[WebSocket] Connected");
     document.getElementById("connectBtn").disabled = false;
+    console.log("[WebSocket] Connect button enabled");
 };
 
 socket.onerror = (err) => {

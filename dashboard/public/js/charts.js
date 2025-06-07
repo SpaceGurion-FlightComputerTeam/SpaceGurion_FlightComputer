@@ -90,7 +90,6 @@ window.addEventListener('DOMContentLoaded', () => {
     let previousTimestamp = null;
 
 
-    document.getElementById("connectBtn").disabled = true;
     document.getElementById("startBtn").disabled = true;
     document.getElementById("stopBtn").disabled = true;
 
@@ -115,13 +114,13 @@ window.addEventListener('DOMContentLoaded', () => {
         }
         
         // Start mission timer when first telemetry packet arrives
-        if (!missionTimerStarted && data.Frame === 1) {
+        if (!missionTimerStarted) {
             startMissionTimer();
             missionTimerStarted = true;
         }
 
         // Format timestamp for display (can be adjusted as needed)
-        const timestamp = parseFloat(data["time"]) || 0;
+        const timestamp = parseFloat(data["timestamp"]) || 0;
         const altitude = parseFloat(data["altitude"]) || 0;
         const tempartue = parseFloat(data["temp"]) || 0;
         const pressure = parseFloat(data["pres"]) || 0;

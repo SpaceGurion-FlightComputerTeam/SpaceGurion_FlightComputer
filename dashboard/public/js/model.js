@@ -380,11 +380,13 @@ function processIMUData(imuData) {
 //****************************************    Web Socket Reading  *********************************************************
 // Websocket connection
 
+/*
 document.getElementById('connectBtn').addEventListener('click', () => {
     send({ command: "connect" });
     connectBtn.disabled = true;
     connectBtn.textContent = "Connected";
-});
+});*/
+
 // WebSocket connection established
 addMessageListener((data) => {
     processIMUData(data);  
