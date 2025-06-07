@@ -4,7 +4,7 @@
 #include "coumunication.h"
 #include "barometer.h"
 #include "helper.h"
-//#include "sd_logger.h"
+#include "sd_logger.h"
 
 // ----- GNSS Setup ----- (gps)
 const char *filename = "/telemetry.txt";
@@ -55,7 +55,7 @@ void printDMS(double lat, double lon) {
 void setup() {
   Serial.begin(I2C_DATA);
   start_socket(RadioRate,  XBEE_RX, XBEE_TX);
- // initSDCard();
+  initSDCard();
   baseTime = millis();
   
   // ----- I2C Initialization -----
@@ -64,12 +64,11 @@ void setup() {
   // ----- GNSS Initialization -----
   if (!myGNSS.begin()) {
     Serial.println("❌ u-blox GNSS module not detected. Check wiring.");
-    while (true);
   }
   // Comment this out to avoid flooding Serial with raw NMEA messages:
   // myGNSS.setNMEAOutputPort(Serial);
   myGNSS.setAutoPVT(true);         // Enable automatic position updates
-  myGNSS.setNavigationFrequency(5);  // Set GNSS update rate to 5 Hz
+  myGNSS.setNavigationFrequency(10);  // Set GNSS update rate to 5 Hz
 
   BARSetup();
   ImuSetup();
@@ -83,7 +82,7 @@ void setup() {
 ////////////////////////////////////////////////////////////
 void loop() {
   // Process any serial commands first.
-  //processSerialCommands();
+  processSerialCommands();
   
   // Only log sensor data if logging is enabled.
   if (loggingEnabled) {
@@ -116,7 +115,7 @@ void loop() {
     String logLine =  bmpData+";"+ readIMU()+ ";" +gnssData+"\n" ;
     
     Serial.println("Log line: " + logLine);
-   // writeToSD(logLine);
+    writeToSD(logLine);
     send(logLine);
   }
   
