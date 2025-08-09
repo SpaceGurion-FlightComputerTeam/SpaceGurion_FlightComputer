@@ -274,15 +274,15 @@ async def read_and_write_data():
 
    
     # Initialize serial port connection - To be moved to try_connect_to_sensors() function
-    PORT = 'COM5'
-    BAUD_RATE = 230400
+    PORT = 'COM6'
+    BAUD_RATE = 115200
     ser = serial.Serial(PORT, BAUD_RATE, timeout=1)
     start_time = None  # Record the start time for timestamping
     iteration = 0   # Initialize iteration counter for data generation. delete this line if not needed
     # Main loop to write data to CSV and broadcast to WebSocket clients
     while True:
         try:           
-            #is_reading = True  # Set the flag to indicate that data is being read, for testing purposes
+            is_reading = True  # Set the flag to indicate that data is being read, for testing purposes
             if is_reading:
                 if start_time is None:
                     start_time = time.time()

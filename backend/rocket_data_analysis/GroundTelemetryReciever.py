@@ -1,8 +1,8 @@
 import serial
 import time
 
-PORT = 'COM5'
-BAUD_RATE = 230400
+PORT = 'COM6'
+BAUD_RATE = 115200
 
 def get_next_serial_line(ser):
     """
