@@ -12,6 +12,7 @@ The telemetry data is streamed in real time to a local server, processed using P
 
 The entire system is modular, cross-platform, and integrates both hardware (ESP32 + sensors) and software (Arduino, Python, JavaScript).
 
+for API visit here: https://docs.google.com/document/d/1JnhAkyDihhIozDLPu3Pv8xhVup0QI2bLViNOBHA5Sp8/edit?usp=sharing
 ---
 
 ## Features
