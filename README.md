@@ -24,6 +24,15 @@ The entire system is modular, cross-platform, and integrates both hardware (ESP3
 
 ---
 
+## Hardware
+- SparkFun IoT RedBoard - ESP32
+- IMU - Sparkfun ICM-20948
+- GPS - sparkfun NEO-M9N
+- Barometer - BMP280
+- Communications - DIGI XBee
+
+---
+
 ## Project Structure
 ```
 SPACEGURION_FLIGHTCOMPUTER/
@@ -93,9 +102,8 @@ Start the system:
 ---
 
 ## Notes & TODO
-- [ ] Add diagrams illustrating system flow
-- [ ] Refactor backend for modularity
-- [ ] Add logging and error handling
+- [ ] fix connect cutton in UI dashboard
+- [ ] improve comminication efficiency
 - [ ] Improve UI controls (e.g., pause/resume)
 
 ---

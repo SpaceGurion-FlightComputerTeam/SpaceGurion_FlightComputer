@@ -12,8 +12,8 @@ from rocket_data_analysis.GroundTelemetryReciever import serial_line_generator, 
 # import websockets
 
 CLIENTS = set() # Set to keep track of connected WebSocket clients
-is_reading = False # Flag to indicate if data is being read and written
-is_connected = False # Flag to indicate if the sensor is connected
+is_reading = False # Flag to indicate if data is being read and written (starts as False)
+is_connected = False # Flag to indicate if the sensor is connected (starts as False)
 
 # This function simulates realistic data generation for temperature, pressure, altitude, gyro, and accelerometer values.
 # TODO: Replace with actual sensor data acquisition function
@@ -282,7 +282,7 @@ async def read_and_write_data():
     # Main loop to write data to CSV and broadcast to WebSocket clients
     while True:
         try:           
-            is_reading = True  # Set the flag to indicate that data is being read, for testing purposes
+            # Only read and broadcast data when is_reading is True
             if is_reading:
                 if start_time is None:
                     start_time = time.time()
@@ -309,7 +309,7 @@ async def read_and_write_data():
                 else:
                     print("[!] No data received from serial port. Waiting for data...")  
             iteration += 1              # Increment the iteration counter
-            await asyncio.sleep(0.1)    # add a small delay to simulate real-time data generation
+            await asyncio.sleep(0.01)    # add a small delay to simulate real-time data generation
 
         except asyncio.CancelledError:
             print("Process interrupted.")
