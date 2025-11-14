@@ -1,20 +1,16 @@
-// Performance optimization flags
-const USE_OPTIMIZED_MATH = true;        // Use fast approximations when possible
-const RENDER_OBJECTS_ONLY_WHEN_NEEDED = true; // Only render when values change
-const ADAPTIVE_RENDERING = true;        // Reduce render quality when moving fast
+import { addMessageListener } from './sockets.js';
+import { send } from './sockets.js';
 
 // ***************************   Connect UI elements ************************************
 const connectBtn = document.getElementById('connectBtn');
 const calibrateBtn = document.getElementById('calibrateBtn');
-const smoothingCheckbox = document.getElementById('smoothingCheckbox');
+const axisCheckbox = document.getElementById('axisCheckbox');
 const gridCheckbox = document.getElementById('gridCheckbox');
 const modelCheckbox = document.getElementById('modelCheckbox');
 const rollStat = document.getElementById('rollStat');
 const pitchStat = document.getElementById('pitchStat');
 const yawStat = document.getElementById('yawStat');
-const startBtn = document.getElementById('startBtn');
-const stopBtn = document.getElementById('stopBtn');
-const cleartBtn = document.getElementById('cleartBtn');
+
 
 // Convert degrees to radians - optimized
 const DEG_TO_RAD = Math.PI / 180;
@@ -69,11 +65,6 @@ scene.add(backLight);
 
 // Add a grid for reference
 const gridHelper = new THREE.GridHelper(30, 30, 0x555555, 0x333333);
-// Flip the Y-axis (rotate 180 degrees)
-//gridHelper.rotation.y = Math.PI;  // Flip around Y-axis
-
-// Flip the Z-axis (rotate 180 degrees)
-//gridHelper.rotation.z = Math.PI;  // Flip around Z-axis
 
 // Rotate to position on the X-Y plane
 gridHelper.rotation.x = Math.PI / 2;  // Rotate 90 degrees around X-axis to make it lie on the X-Y plane
@@ -96,8 +87,6 @@ window.addEventListener('resize', () => {
 // *********************  Create enhanced 3D object to represent IMU  *************************
 // Global variables
 let imuObject;
-let currentModel = null;
-
 
 function createIMUObject() {
     const group = new THREE.Group();
@@ -110,6 +99,8 @@ function createIMUObject() {
 
     return group;
 }
+
+let xArrow, yArrow, zArrow;     // Global variables for axis arrows
 
 function loadModel(parentGroup) {
     // Clear any existing model
@@ -166,7 +157,7 @@ function loadModel(parentGroup) {
     const headWidth = 0.15;
 
     // X-axis (red) - Roll
-    const xArrow = new THREE.ArrowHelper(
+    xArrow = new THREE.ArrowHelper(
         new THREE.Vector3(1, 0, 0),
         new THREE.Vector3(0, 0, 0),
         arrowLength,
@@ -177,7 +168,7 @@ function loadModel(parentGroup) {
     parentGroup.add(xArrow);
 
     // Y-axis (green) - Pitch
-    const yArrow = new THREE.ArrowHelper(
+    yArrow = new THREE.ArrowHelper(
         new THREE.Vector3(0, 1, 0),
         new THREE.Vector3(0, 0, 0),
         arrowLength,
@@ -188,9 +179,8 @@ function loadModel(parentGroup) {
     parentGroup.add(yArrow);
 
 
-    /*
     // Z-axis (blue) - Yaw
-    const zArrow = new THREE.ArrowHelper(
+    zArrow = new THREE.ArrowHelper(
         new THREE.Vector3(0, 0, 1),
         new THREE.Vector3(0, 0, 0),
         arrowLength,
@@ -198,8 +188,8 @@ function loadModel(parentGroup) {
         headLength,
         headWidth
     );
-    //parentGroup.add(zArrow);
-    */
+    parentGroup.add(zArrow);
+   
 
     // Z-axis "flame" — looks like a rocket exhaust
     const flameLength = arrowLength;
@@ -219,16 +209,13 @@ function loadModel(parentGroup) {
     const flame = new THREE.Mesh(flameGeometry, flameMaterial);
     flame.rotation.x = Math.PI / 2;
     flame.position.set(0, 0, flameLength / 2 + 0.7);  // Position so base is at origin
-
     parentGroup.add(flame);
-
 
 }
 
-
 // Fallback to the original box if loading fails
 function createCube(parentGroup) {
-    const geometry = new THREE.BoxGeometry(2, 0.5, 2);
+    const geometry = new THREE.BoxGeometry(0.3, 4, 0.3);
     const material = new THREE.MeshPhongMaterial({
         color: 0x00a2ff,
         specular: 0x444444,
@@ -242,7 +229,7 @@ function createCube(parentGroup) {
     const edges = new THREE.LineSegments(edgesGeometry, edgesMaterial);
     box.add(edges);
     box.rotation.set(Math.PI / 2, 0, 0); // Example rotation if needed
-
+    box.position.set(0, 0, -1.2);
     parentGroup.add(box);
     console.warn('Falling back to cube due to model loading error');
 }
@@ -263,21 +250,22 @@ modelCheckbox.addEventListener('change', function () {
 //*************************************  Optimized animation loop  ************************************************
 function animate(time) {
     requestAnimationFrame(animate);
-
-    // Update orientation
-    //updateOrientation();
-
     // Ensure the scene is rendered
     renderer.render(scene, camera);
 
     // Toggle grid visibility
     gridHelper.visible = gridCheckbox.checked;
+    
+    // Toggle axis visibility
+    const showAxes = axisCheckbox.checked;
+    xArrow.visible = showAxes;
+    yArrow.visible = showAxes;
+    zArrow.visible = showAxes;
 
 }
 
 // Start animation
 animate(0);
-
 
 
 
@@ -310,6 +298,7 @@ const rollFilter = new KalmanFilter(0.05, 0.1);  // More responsive
 const pitchFilter = new KalmanFilter(0.05, 0.1);
 const yawFilter = new KalmanFilter(0.01, 0.1);
 
+
 // **************************************** IMU Data Processing ******************************************************************* 
 // Global variables for orientation
 let roll = 0, pitch = 0, yaw = 0;
@@ -324,10 +313,9 @@ let adaptiveSmoothingFactor = baseSmoothingFactor;
 let lastOrientationChange = 0;
 let isMoving = false;
 
-function processIMUData(data) {
+function processIMUData(imuData) {
     try {
-        const imuData = JSON.parse(data);
-
+        // Check if the data contains the required fields
         if ('ax' in imuData && 'ay' in imuData && 'az' in imuData && 'gx' in imuData && 'gy' in imuData && 'gz' in imuData) {
             const now = Date.now();
             const dt = (now - lastUpdateTime) / 1000.0;
@@ -373,8 +361,6 @@ function processIMUData(data) {
                 yaw += imuData.gz * dt * GYRO_SCALE;
             }
 
-
-
             // Complementary filter: combine gyro & accelerometer data
             roll = ALPHA * (roll + imuData.gx * dt * GYRO_SCALE) + (1 - ALPHA) * rollAcc;
             pitch = ALPHA * (pitch + imuData.gy * dt * GYRO_SCALE) + (1 - ALPHA) * pitchAcc;
@@ -390,6 +376,23 @@ function processIMUData(data) {
         console.error('Error parsing IMU data:', e);
     }
 }
+
+//****************************************    Web Socket Reading  *********************************************************
+// Websocket connection
+
+/*
+document.getElementById('connectBtn').addEventListener('click', () => {
+    send({ command: "connect" });
+    connectBtn.disabled = true;
+    connectBtn.textContent = "Connected";
+});*/
+
+// WebSocket connection established
+addMessageListener((data) => {
+    processIMUData(data);  
+});
+//-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 
 
 // ******************************************  Orientation data and improved adaptive Smoothing ************************************************
@@ -430,17 +433,12 @@ function updateOrientation() {
     const movementMagnitude = calculateMovementMagnitude(targetRoll, targetPitch, targetYaw);
     updateAdaptiveSmoothing(movementMagnitude);
 
-    if (smoothingCheckbox.checked) {
-        // Apply adaptive smoothing only if needed
-        currentRoll += adaptiveSmoothingFactor * (targetRoll - currentRoll);
-        currentPitch += adaptiveSmoothingFactor * (targetPitch - currentPitch);
-        currentYaw += adaptiveSmoothingFactor * (targetYaw - currentYaw);
-    } else {
-        // Direct update without smoothing
-        currentRoll = targetRoll;
-        currentPitch = targetPitch;
-        currentYaw = targetYaw;
-    }
+
+    // Apply adaptive smoothing only if needed
+    currentRoll += adaptiveSmoothingFactor * (targetRoll - currentRoll);
+    currentPitch += adaptiveSmoothingFactor * (targetPitch - currentPitch);
+    currentYaw += adaptiveSmoothingFactor * (targetYaw - currentYaw);
+ 
 
     // Apply yaw offset BEFORE converting to radians
     const adjustedYaw = currentYaw - yawOffset;
@@ -464,13 +462,11 @@ function updateOrientation() {
     rollStat.textContent = currentRoll.toFixed(1) + "°";
     pitchStat.textContent = -currentPitch.toFixed(1) + "°";
     yawStat.textContent = -adjustedYaw.toFixed(1) + "°";
-    console.log(`Roll: ${currentRoll.toFixed(1)}°, Pitch: ${-currentPitch.toFixed(1)}°, Yaw: ${-adjustedYaw.toFixed(1)}°`);
-
 }
 
 
 // Reset offset to current values 
-calibrateBtn.addEventListener('click', () => {
+document.getElementById('calibrateBtn').addEventListener('click', () => {
     pitchOffset = currentPitch;
     rollOffset = currentRoll;
     yawOffset = currentYaw;

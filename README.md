@@ -1,53 +1,113 @@
-# Rocket IMU Data Visualization
+# SpaceGurion Flight Computer
 
-## Overview
-This project reads real-time data from the **ICM-20948 IMU sensor** using an Arduino microcontroller and displays it graphically in a web interface. The system runs on a **local Node.js server** and serves the visualization dashboard through a browser.
+## Project Overview
+This project is developed by the **Flight Computer** team as part of the SpaceGurion initiative. Its purpose is to handle, stream, analyze, and visualize telemetry data collected during rocket flight. The system integrates data from multiple onboard sensors including:
+- **IMU** (Inertial Measurement Unit)
+- **GPS**
+- **Barometer**
 
-## Installation & Setup
+The telemetry data is streamed in real time to a local server, processed using Python, and visualized via a web dashboard that includes:
+- A **3D model** of the rocket reflecting its live orientation (via Three.js)
+- **Live graphs** showing altitude and vertical velocity (via Chart.js)
+
+The entire system is modular, cross-platform, and integrates both hardware (ESP32 + sensors) and software (Arduino, Python, JavaScript).
+
+---
+
+## Features
+- Real-Time Telemetry Streaming via WebSocket
+- Dynamic Charts for altitude and velocity
+- 3D Rocket Visualization based on IMU orientation
+- Python Backend for data handling and analysis
+- Arduino scripts for sensor integration
+- Simple startup using `start.bat`
+
+---
+
+## Hardware
+- SparkFun IoT RedBoard - ESP32
+- IMU - Sparkfun ICM-20948
+- GPS - sparkfun NEO-M9N
+- Barometer - BMP280
+- Communications - DIGI XBee
+
+---
+
+## Project Structure
+```
+SPACEGURION_FLIGHTCOMPUTER/
+│
+├── arduino/
+│   ├── esp_sensors/
+│   │   └── esp_sensors.ino
+│   ├── IMU_Data/
+│   │   └── IMU_Data.ino  ** to be removed
+│   └── libraries/
+│       * specified below *
+│
+├── backend/
+│   └── rocket_data_analysis/
+│       ├── data_analysis.py
+│       └── rocket_data.csv
+│   └── main.py
+│
+├── dashboard/
+|   └── public/
+│       ├── 3d_models/
+│       │   ├── rocket.glb
+│       │   └── Saturn V.glb
+│       ├── css/
+│       │   └── styles.css
+│       ├── js/
+│       │   ├── charts.js
+│       │   └── model.js
+│       └── dashboard.html
+│
+├── schematics/
+│   ├── hardware_diagram.png
+│   └── ground_control.png
+|
+├── start.bat
+└── README.md
+```
+
+---
+
+## Setup & Running the Project
+
 ### Prerequisites
-Before setting up, ensure you have the following installed:
-- **Node.js** (Download from [nodejs.org](https://nodejs.org/))
-- **Arduino IDE** (For uploading code to the microcontroller)
-- **Serial communication drivers** (if required for your Arduino board)
+- Python 3.x
+- Arduino IDE
+- A modern browser (for dashboard)
 
-### Setup Steps
-#### 1. Upload the Arduino Code
-1. Open **Arduino IDE**.
-2. Install required libraries (if any).
-3. Open the Arduino script from this repository.
-4. Select the correct board and port.
-5. Upload the code to your microcontroller.
+### Install Required Python Libraries
+```bash
+pip install websockets numpy pandas
+```
 
-#### 2. Install & Run the Web Server
-1. Open a terminal inside the `server` directory:
-   
-2. Install Node.js dependencies:
-   ```sh
-   npm install
-   ```
-3. Run the local server by double-click the `start.bat` file in the root directory
-   
-   - This will launch the server and open `http://127.0.0.1:8080/index.html` in your browser.
-   - If the batch file doesn’t work, manually start the server. enter the followind command in the terminal inside the `server` directory:
-     
-     ```sh
-     node server.js
+### Required Arduino Libraries
+Install the following via the Arduino Library Manager:
+- SparkFun_ICM-20948_ArduinoLibrary
+- Adafruit_BMP280
+- SparkFun_u-blox_GNSS_Arduino_Library
+
+### Running the System
+Start the system:
+  - Double-click `start.bat`  
+  or
+  - Manually run:
+     ```bash
+     python backend/main.py
      ```
-     then copy `http://127.0.0.1:8080/index.html` to your browser
+---
 
+## Notes & TODO
+- [ ] fix connect cutton in UI dashboard
+- [ ] improve comminication efficiency
+- [ ] Improve UI controls (e.g., pause/resume)
 
-## File Structure
-- **`arduino/`** → Contains the Arduino IMU sensor code.
-- **`server/`** → Contains the web interface and backend.
-  - **`server.js`** → Node.js server using Express.js.
-  - **`public/`** → HTML, CSS, and JavaScript files for visualization.
-  - **`package.json`** → Lists dependencies.
-  - **`start.bat`** → Starts the server and opens the web app.
+---
 
-
-## Troubleshooting
-- **Missing Packages?** Run `npm install` in the `server/` folder.
-- **Port Already in Use?** Change the port in `server.js` if 8080 is taken.
-- **Arduino Not Sending Data?** Check serial connections and baud rate.
-
-
+## Credits
+This project is maintained by the Flight Computer team @ SpaceGurion.
+---
